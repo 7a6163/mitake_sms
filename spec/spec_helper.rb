@@ -1,5 +1,25 @@
 # frozen_string_literal: true
 
+# 設定覆蓋率報告
+require 'simplecov'
+require 'simplecov-cobertura'
+
+SimpleCov.start do
+  add_filter '/spec/'
+  add_filter '/vendor/'
+  # 添加你想要測量覆蓋率的文件夾
+  add_group 'Library', 'lib'
+  
+  # 設定輸出格式
+  formatter SimpleCov::Formatter::MultiFormatter.new([
+    SimpleCov::Formatter::HTMLFormatter,
+    SimpleCov::Formatter::CoberturaFormatter # 生成 XML 格式報告
+  ])
+  
+  # 設定覆蓋率報告的最小覆蓋率百分比
+  minimum_coverage 80
+end
+
 require 'bundler/setup'
 require 'mitake_sms'
 require 'webmock/rspec'
