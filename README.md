@@ -96,13 +96,13 @@ The gem provides specific error classes for different types of errors:
 ```ruby
 begin
   response = MitakeSms.send_sms('invalid', 'test')
-rescue MitakeSms::AuthenticationError => e
+rescue MitakeSms::Client::AuthenticationError => e
   puts "Authentication failed: #{e.message}"
-rescue MitakeSms::InvalidRequestError => e
+rescue MitakeSms::Client::InvalidRequestError => e
   puts "Invalid request: #{e.message}"
-rescue MitakeSms::ServerError => e
+rescue MitakeSms::Client::ServerError => e
   puts "Server error: #{e.message}"
-rescue MitakeSms::Error => e
+rescue MitakeSms::Client::Error => e
   puts "An error occurred: #{e.message}"
 end
 ```

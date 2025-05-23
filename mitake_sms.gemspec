@@ -30,11 +30,14 @@ Gem::Specification.new do |spec|
   spec.executables = spec.files.grep(%r{\Aexe/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
 
-  spec.add_dependency "faraday", "~> 2.0"
-  spec.add_dependency "faraday-multipart", "~> 1.0"
-  spec.add_dependency "dry-configurable", "~> 1.0"
+  spec.add_dependency "faraday", ">= 1.0", "< 3.0"
+  spec.add_dependency "faraday-multipart", ">= 0.1", "< 2.0"
+  spec.add_dependency "dry-configurable", ">= 0.13.0", "< 2.0"
   spec.add_development_dependency "rspec", "~> 3.0"
   spec.add_development_dependency "webmock", "~> 3.14"
+  spec.add_development_dependency "pry", "~> 0.14.0"
+  spec.add_development_dependency "rake", "~> 13.0"
+  spec.add_development_dependency "simplecov", "~> 0.21.0"
 
   # For more information and examples about making a new gem, check out our
   # guide at: https://bundler.io/guides/creating_gem.html

@@ -7,6 +7,9 @@ require_relative 'mitake_sms/client'
 
 module MitakeSms
   class Error < StandardError; end
+  class AuthenticationError < Error; end
+  class InvalidRequestError < Error; end
+  class ServerError < Error; end
 
   class << self
     # Configure the gem
@@ -21,9 +24,9 @@ module MitakeSms
     end
 
     # Get the current configuration
-    # @return [MitakeSms::Configuration] the current configuration
+    # @return [Dry::Configurable::Config] the configuration object
     def config
-      @config ||= Configuration.new
+      Configuration.config
     end
 
     # Create a new client with the current configuration

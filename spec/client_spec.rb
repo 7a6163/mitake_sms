@@ -3,15 +3,19 @@
 require 'spec_helper'
 
 RSpec.describe MitakeSms::Client do
-  let(:config) do
-    MitakeSms::Configuration.new.tap do |c|
+  let(:config) { MitakeSms::Configuration.new }
+  
+  before do
+    MitakeSms.configure do |c|
       c.username = 'test_username'
       c.password = 'test_password'
       c.api_url = 'https://test.api.mitake.com.tw/'
+      c.timeout = 30
+      c.open_timeout = 5
     end
   end
 
-  let(:client) { described_class.new(config: config) }
+  let(:client) { described_class.new }
   let(:stubs) { Faraday::Adapter::Test::Stubs.new }
   let(:connection) do
     Faraday.new do |builder|
@@ -29,11 +33,15 @@ RSpec.describe MitakeSms::Client do
 
     context 'when the request is successful' do
       before do
-        stubs.post('api/mtk/SmSend') do |env|
-          expect(env.url.path).to eq('/api/mtk/SmSend')
-          expect(env.body).to include("username=test_username")
-          expect(env.body).to include("password=test_password")
-          expect(env.body).to include("dstaddr=#{to}")
+        stubs.post('SmSend') do |env|
+          expect(env.url.path).to eq('/SmSend')
+          # Check for hash parameters
+          expect(env.body).to eq({
+            username: 'test_username',
+            password: 'test_password',
+            dstaddr: to,
+            smbody: 'Test message'
+          })
           
           [
             200,
@@ -54,13 +62,13 @@ RSpec.describe MitakeSms::Client do
 
     context 'when authentication fails' do
       before do
-        stubs.post('api/mtk/SmSend') { [401, {}, ''] }
+        stubs.post('SmSend') { [401, {}, ''] }
       end
 
       it 'raises an AuthenticationError' do
         expect {
           client.send_sms(to, text)
-        }.to raise_error(MitakeSms::AuthenticationError)
+        }.to raise_error(MitakeSms::Client::AuthenticationError)
       end
     end
   end
@@ -75,11 +83,14 @@ RSpec.describe MitakeSms::Client do
 
     context 'when the request is successful' do
       before do
-        stubs.post('api/mtk/SmBulkSend') do |env|
-          expect(env.url.path).to eq('/api/mtk/SmBulkSend')
-          expect(env.body).to include("username=test_username")
-          expect(env.body).to include("password=test_password")
-          expect(env.body).to include("smbody=0912345678:Message 1\n0922333444:Message 2")
+        stubs.post('SmBulkSend') do |env|
+          expect(env.url.path).to eq('/SmBulkSend')
+          # Check for hash parameters
+          expect(env.body).to eq({
+            username: 'test_username',
+            password: 'test_password',
+            smbody: "0912345678:Message 1\n0922333444:Message 2"
+          })
           
           [
             200,

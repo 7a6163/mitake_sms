@@ -12,8 +12,10 @@ module MitakeSms
     class InvalidRequestError < Error; end
     class ServerError < Error; end
 
-    def initialize(options = {})
-      @config = options[:config] || MitakeSms.config
+    # Initialize a new MitakeSms::Client
+    # @param config [MitakeSms::Configuration] configuration object
+    def initialize(config = nil)
+      @config = config || MitakeSms.config
       @connection = build_connection
     end
 
@@ -47,11 +49,10 @@ module MitakeSms
         password: @config.password,
         smbody: messages.map do |msg|
           to = msg[:to]
-          text = msg[:text].encode('BIG5', invalid: :replace, undef: :replace, replace: '?')
+          text = msg[:text].to_s.encode('BIG5', invalid: :replace, undef: :replace, replace: '?')
           "#{to}:#{text}"
-        end.join('\n')
+        end.join("\n")
       }
-
       response = @connection.post('SmBulkSend', params)
       handle_response(response)
     end
@@ -60,8 +61,8 @@ module MitakeSms
 
     def build_connection
       Faraday.new(url: @config.api_url) do |conn|
-        conn.request :multipart
         conn.request :url_encoded
+        conn.request :multipart
         conn.adapter Faraday.default_adapter
         conn.options.timeout = @config.timeout
         conn.options.open_timeout = @config.open_timeout
