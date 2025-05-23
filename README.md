@@ -1,5 +1,7 @@
 # MitakeSms
 
+[![codecov](https://codecov.io/gh/7a6163/mitake_sms/graph/badge.svg?token=QNRP1N3TOP)](https://codecov.io/gh/7a6163/mitake_sms)
+
 A Ruby client for the Mitake SMS API, providing a simple and efficient way to send SMS messages through the Mitake SMS service.
 
 ## Features
@@ -61,7 +63,7 @@ end
 
 # With additional options
 response = MitakeSms.send_sms(
-  '0912345678', 
+  '0912345678',
   'Hello with options!',
   from: 'YourBrand',
   response_url: 'https://your-callback-url.com/delivery-reports',
