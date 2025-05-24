@@ -6,11 +6,6 @@ source "https://rubygems.org"
 gemspec
 
 group :development, :test do
+  # These gems are used for development but not included in the gem
   gem "irb"
-  gem "pry"
-  gem "rspec"
-  gem "webmock"
-  gem "simplecov", require: false
-  gem "simplecov-cobertura", require: false  # 用於生成 XML 格式的覆蓋率報告
-  gem "rake", "~> 13.0"
 end

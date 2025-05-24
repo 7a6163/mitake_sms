@@ -38,6 +38,7 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "pry", "~> 0.14.0"
   spec.add_development_dependency "rake", "~> 13.0"
   spec.add_development_dependency "simplecov", "~> 0.21.0"
+  spec.add_development_dependency "simplecov-cobertura", "~> 2.1"
 
   # For more information and examples about making a new gem, check out our
   # guide at: https://bundler.io/guides/creating_gem.html
