@@ -48,11 +48,26 @@ module MitakeSms
     end
 
     # Send multiple SMS messages in a single request
+    # The Mitake SMS API has a limit of 500 messages per request
+    # If more than 500 messages are provided, they will be automatically split into multiple requests
     # @param messages [Array<Hash>] array of message hashes
     #   Each hash should contain :to and :text keys, and can include :from, :response_url, :client_id
-    # @return [MitakeSms::Response] response object
-    def batch_send(messages)
-      client.batch_send(messages)
+    # @param options [Hash] additional options
+    # @option options [String] :charset character encoding, defaults to 'UTF8'
+    # @return [MitakeSms::Response, Array<MitakeSms::Response>] response object or array of response objects if batch was split
+    def batch_send(messages, options = {})
+      client.batch_send_with_limit(messages, 500, options)
+    end
+
+    # Send multiple SMS messages in a single request with a limit per request
+    # @param messages [Array<Hash>] array of message hashes
+    #   Each hash should contain :to and :text keys, and can include :from, :response_url, :client_id
+    # @param limit [Integer] maximum number of messages per request (default: 500)
+    # @param options [Hash] additional options
+    # @option options [String] :charset character encoding, defaults to 'UTF8'
+    # @return [MitakeSms::Response, Array<MitakeSms::Response>] response object or array of response objects if batch was split
+    def batch_send_with_limit(messages, limit = 500, options = {})
+      client.batch_send_with_limit(messages, limit, options)
     end
   end
 end

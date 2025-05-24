@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2025-05-24
+### Added
+- Added automatic handling of the 500 message limit for batch SMS sending
+- Added UTF-8 encoding support by default for all SMS messages
+- Added `CharsetURL` parameter for single SMS messages
+- Added `Encoding_PostIn` parameter for batch SMS messages
+- Added ability to customize character encoding via options
+
+### Changed
+- Updated documentation to reflect new encoding options
+- Improved batch sending with automatic splitting of large batches
+
 ## [1.0.0] - 2025-05-24
 ### Added
 - Initial stable release

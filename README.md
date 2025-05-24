@@ -7,7 +7,8 @@ A Ruby client for the Mitake SMS API, providing a simple and efficient way to se
 ## Features
 
 - Send single SMS messages
-- Send batch SMS messages
+- Send batch SMS messages with automatic handling of the 500 message API limit
+- UTF-8 encoding support by default
 - Configurable API settings
 - Simple and intuitive API
 - Comprehensive error handling
@@ -51,7 +52,7 @@ end
 ### Sending a Single SMS
 
 ```ruby
-# Send a simple SMS
+# Send a simple SMS (uses UTF-8 encoding by default)
 response = MitakeSms.send_sms('0912345678', 'Hello, this is a test message!')
 
 if response.success?
@@ -67,7 +68,8 @@ response = MitakeSms.send_sms(
   'Hello with options!',
   from: 'YourBrand',
   response_url: 'https://your-callback-url.com/delivery-reports',
-  client_id: 'your-client-reference-id'
+  client_id: 'your-client-reference-id',
+  charset: 'BIG5'  # Override the default UTF-8 encoding if needed
 )
 ```
 
@@ -80,14 +82,60 @@ messages = [
   { to: '0933555777', text: 'Third message', response_url: 'https://your-callback-url.com/reports' }
 ]
 
+# Automatically handles batches according to the Mitake SMS API limit (500 messages per request)
+# If you send more than 500 messages, they will be automatically split into multiple requests
+# Uses UTF-8 encoding by default
 response = MitakeSms.batch_send(messages)
 
-if response.success?
+# You can specify a different character encoding if needed
+response = MitakeSms.batch_send(messages, charset: 'BIG5')
+
+# If fewer than 500 messages, you'll get a single response
+if response.is_a?(MitakeSms::Response) && response.success?
   puts "Batch sent successfully!"
   puts "Message ID: #{response.message_id}"
   puts "Remaining points: #{response.account_point}"
+
+# If more than 500 messages, you'll get an array of responses
+elsif response.is_a?(Array)
+  response.each_with_index do |batch_response, index|
+    if batch_response.success?
+      puts "Batch #{index + 1} sent successfully!"
+      puts "Message ID: #{batch_response.message_id}"
+      puts "Remaining points: #{batch_response.account_point}"
+    else
+      puts "Batch #{index + 1} failed: #{batch_response.error}"
+    end
+  end
 else
   puts "Failed to send batch: #{response.error}"
+end
+```
+
+### Sending Large Batches with Custom Limit
+
+```ruby
+# Create a large batch of messages
+messages = (1..1000).map do |i|
+  { to: '0912345678', text: "Message #{i}" }
+end
+
+# The Mitake SMS API has a limit of 500 messages per request
+# However, you can set a lower limit if needed for your use case
+# This will split into batches of 300 messages each
+# Uses UTF-8 encoding by default
+responses = MitakeSms.batch_send_with_limit(messages, 300)
+
+# You can specify a different character encoding if needed
+responses = MitakeSms.batch_send_with_limit(messages, 300, charset: 'BIG5')
+
+# Process the array of responses
+responses.each_with_index do |batch_response, index|
+  if batch_response.success?
+    puts "Batch #{index + 1} sent successfully!"
+  else
+    puts "Batch #{index + 1} failed: #{batch_response.error}"
+  end
 end
 ```
 

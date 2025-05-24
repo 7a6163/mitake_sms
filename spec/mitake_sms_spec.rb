@@ -36,9 +36,9 @@ RSpec.describe MitakeSms do
     it 'delegates to client' do
       client = instance_double(MitakeSms::Client)
       allow(MitakeSms).to receive(:client).and_return(client)
-      
+
       expect(client).to receive(:send_sms).with(to, text, {})
-      
+
       MitakeSms.send_sms(to, text)
     end
   end
@@ -51,13 +51,61 @@ RSpec.describe MitakeSms do
       ]
     end
 
-    it 'delegates to client' do
+    it 'delegates to client with default options' do
       client = instance_double(MitakeSms::Client)
       allow(MitakeSms).to receive(:client).and_return(client)
-      
-      expect(client).to receive(:batch_send).with(messages)
-      
+
+      expect(client).to receive(:batch_send_with_limit).with(messages, 500, {})
+
       MitakeSms.batch_send(messages)
+    end
+
+    it 'delegates to client with custom options' do
+      client = instance_double(MitakeSms::Client)
+      allow(MitakeSms).to receive(:client).and_return(client)
+      options = { charset: 'BIG5' }
+
+      expect(client).to receive(:batch_send_with_limit).with(messages, 500, options)
+
+      MitakeSms.batch_send(messages, options)
+    end
+  end
+
+  describe '.batch_send_with_limit' do
+    let(:messages) do
+      [
+        { to: '0912345678', text: 'Message 1' },
+        { to: '0922333444', text: 'Message 2' }
+      ]
+    end
+    let(:limit) { 10 }
+
+    it 'delegates to client with the specified limit' do
+      client = instance_double(MitakeSms::Client)
+      allow(MitakeSms).to receive(:client).and_return(client)
+
+      expect(client).to receive(:batch_send_with_limit).with(messages, limit, {})
+
+      MitakeSms.batch_send_with_limit(messages, limit)
+    end
+
+    it 'uses default limit when not specified' do
+      client = instance_double(MitakeSms::Client)
+      allow(MitakeSms).to receive(:client).and_return(client)
+
+      expect(client).to receive(:batch_send_with_limit).with(messages, 500, {})
+
+      MitakeSms.batch_send_with_limit(messages)
+    end
+
+    it 'delegates to client with options' do
+      client = instance_double(MitakeSms::Client)
+      allow(MitakeSms).to receive(:client).and_return(client)
+      options = { charset: 'BIG5' }
+
+      expect(client).to receive(:batch_send_with_limit).with(messages, limit, options)
+
+      MitakeSms.batch_send_with_limit(messages, limit, options)
     end
   end
 end
