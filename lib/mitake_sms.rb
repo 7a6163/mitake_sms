@@ -42,6 +42,8 @@ module MitakeSms
     # @option options [String] :from sender ID
     # @option options [String] :response_url callback URL for delivery reports
     # @option options [String] :client_id client reference ID
+    # @option options [String] :charset character encoding, defaults to 'UTF8'
+
     # @return [MitakeSms::Response] response object
     def send_sms(to, text, options = {})
       client.send_sms(to, text, options)
@@ -54,6 +56,7 @@ module MitakeSms
     #   Each hash should contain :to and :text keys, and can include :from, :response_url, :client_id
     # @param options [Hash] additional options
     # @option options [String] :charset character encoding, defaults to 'UTF8'
+
     # @return [MitakeSms::Response, Array<MitakeSms::Response>] response object or array of response objects if batch was split
     def batch_send(messages, options = {})
       client.batch_send_with_limit(messages, 500, options)
@@ -65,9 +68,39 @@ module MitakeSms
     # @param limit [Integer] maximum number of messages per request (default: 500)
     # @param options [Hash] additional options
     # @option options [String] :charset character encoding, defaults to 'UTF8'
+
     # @return [MitakeSms::Response, Array<MitakeSms::Response>] response object or array of response objects if batch was split
     def batch_send_with_limit(messages, limit = 500, options = {})
       client.batch_send_with_limit(messages, limit, options)
+    end
+    
+    # Send multiple SMS messages in a single request using advanced format
+    # @param messages [Array<Hash>] array of message hashes with advanced options
+    #   Each hash can contain the following keys:
+    #   - :client_id [String] client reference ID (optional)
+    #   - :to [String] recipient phone number (required)
+    #   - :dlvtime [String] delivery time in format YYYYMMDDHHMMSS (optional)
+    #   - :vldtime [String] valid until time in format YYYYMMDDHHMMSS (optional)
+    #   - :dest_name [String] recipient name (optional)
+    #   - :response [String] callback URL for delivery reports (optional)
+    #   - :text [String] message content (required)
+    # @param options [Hash] additional options
+    # @option options [String] :charset character encoding, defaults to 'UTF8'
+
+    # @return [MitakeSms::Response, Array<MitakeSms::Response>] response object or array of response objects if batch was split
+    def advanced_batch_send(messages, options = {})
+      client.advanced_batch_send(messages, options)
+    end
+    
+    # Send multiple SMS messages in a single request with a limit per request using advanced format
+    # @param messages [Array<Hash>] array of message hashes with advanced options
+    # @param limit [Integer] maximum number of messages per request (default: 500)
+    # @param options [Hash] additional options
+    # @option options [String] :charset character encoding, defaults to 'UTF8'
+
+    # @return [MitakeSms::Response, Array<MitakeSms::Response>] response object or array of response objects if batch was split
+    def advanced_batch_send_with_limit(messages, limit = 500, options = {})
+      client.advanced_batch_send_with_limit(messages, limit, options)
     end
   end
 end

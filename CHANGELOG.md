@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] - 2025-05-25
+### Added
+- Added proper handling of newlines in message text (converts to ASCII code 6)
+- Added URL encoding for message content to handle special characters
+- Added advanced batch SMS format support using ClientID $$ dstaddr $$ dlvtime $$ vldtime $$ destname $$ response $$ smbody
+- Added automatic generation of unique ClientIDs for advanced batch SMS
+
+### Changed
+- Improved message formatting to comply with Mitake API requirements
+- Enhanced test coverage to 92.81%
+
 ## [1.1.0] - 2025-05-24
 ### Added
 - Added automatic handling of the 500 message limit for batch SMS sending

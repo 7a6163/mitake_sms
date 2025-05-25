@@ -8,19 +8,19 @@ RSpec.describe MitakeSms::Configuration do
     # Store original values
     @original_username = ENV['MITAKE_USERNAME']
     @original_password = ENV['MITAKE_PASSWORD']
-    
+
     # Clear environment variables
     ENV['MITAKE_USERNAME'] = nil
     ENV['MITAKE_PASSWORD'] = nil
-    
+
     # Reset configuration to defaults
     MitakeSms::Configuration.username = nil
     MitakeSms::Configuration.password = nil
-    MitakeSms::Configuration.api_url = 'https://smsapi.mitake.com.tw/api/mtk/'
+    MitakeSms::Configuration.api_url = 'https://smsapi.mitake.com.tw/b2c/mtk/'
     MitakeSms::Configuration.timeout = 30
     MitakeSms::Configuration.open_timeout = 5
   end
-  
+
   # Restore original environment variables after each test
   after do
     ENV['MITAKE_USERNAME'] = @original_username
@@ -30,7 +30,7 @@ RSpec.describe MitakeSms::Configuration do
     it 'has default values' do
       expect(described_class.username).to be_nil
       expect(described_class.password).to be_nil
-      expect(described_class.api_url).to eq('https://smsapi.mitake.com.tw/api/mtk/')
+      expect(described_class.api_url).to eq('https://smsapi.mitake.com.tw/b2c/mtk/')
       expect(described_class.timeout).to eq(30)
       expect(described_class.open_timeout).to eq(5)
     end

@@ -45,7 +45,7 @@ require 'mitake_sms'
 MitakeSms.configure do |config|
   config.username = 'your_username'  # Your Mitake SMS API username
   config.password = 'your_password'  # Your Mitake SMS API password
-  config.api_url = 'https://smsapi.mitake.com.tw/api/mtk/'  # Default API URL
+  config.api_url = 'https://smsapi.mitake.com.tw/b2c/mtk/'  # Default API URL
 end
 ```
 
@@ -135,6 +135,62 @@ responses.each_with_index do |batch_response, index|
     puts "Batch #{index + 1} sent successfully!"
   else
     puts "Batch #{index + 1} failed: #{batch_response.error}"
+  end
+end
+```
+
+### Sending Advanced Format Batch SMS
+
+The advanced format allows more control over each message in the batch, including scheduled delivery, validity period, recipient name, and more:
+
+```ruby
+# Create messages with advanced options
+messages = [
+  {
+    client_id: 'unique-id-20250525-001', # Client reference ID (auto-generated if not provided)
+    to: '0912345678',                    # Required recipient phone number
+    dlvtime: '20250526120000',           # Optional delivery time (YYYYMMDDhhmmss)
+    vldtime: '20250527120000',           # Optional validity period (YYYYMMDDhhmmss)
+    dest_name: '大寶',                   # Optional recipient name
+    response: 'https://callback.url',    # Optional callback URL
+    text: '這是一則測試簡訊'             # Required message content
+  },
+  {
+    # client_id will be auto-generated if not provided
+    to: '0922333444',
+    text: '這是另一則測試簡訊'
+    # Other fields are optional
+  }
+]
+
+# Note about ClientID:
+# - ClientID is used by Mitake to prevent duplicate message sending within 12 hours
+# - If not provided, a unique ID will be automatically generated using timestamp and random values
+# - For custom tracking, you can provide your own unique ClientID
+#
+# Note about message text formatting:
+# - If your message text contains line breaks (\n), they will be automatically converted
+#   to ASCII code 6 as required by the Mitake API
+# - Example: "First line\nSecond line" will be properly displayed with a line break on the recipient's device
+# - Special characters like '&' are automatically URL encoded to ensure proper transmission
+# - Long messages will be automatically split into multiple SMS messages if your account doesn't
+#   have long message permissions
+
+# Send using advanced format (automatically handles 500 message limit)
+response = MitakeSms.advanced_batch_send(messages)
+
+# Process response similar to regular batch sending
+if response.is_a?(MitakeSms::Response) && response.success?
+  puts "Advanced batch sent successfully!"
+  puts "Message ID: #{response.message_id}"
+  puts "Remaining points: #{response.account_point}"
+elsif response.is_a?(Array)
+  response.each_with_index do |batch_response, index|
+    if batch_response.success?
+      puts "Batch #{index + 1} sent successfully!"
+    else
+      puts "Batch #{index + 1} failed: #{batch_response.error}"
+    end
   end
 end
 ```
