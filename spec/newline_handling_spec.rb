@@ -95,6 +95,4 @@ RSpec.describe 'Newline and special character handling' do
       expect(response).to be_success
     end
   end
-
-
 end

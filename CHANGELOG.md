@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.0] - 2025-05-25
+### Changed
+- Removed automatic URL encoding of message content
+- Simplified message handling by only converting newlines to ASCII code 6
+- Modified tests to match the updated implementation
+
 ## [1.2.0] - 2025-05-25
 ### Added
 - Added proper handling of newlines in message text (converts to ASCII code 6)
