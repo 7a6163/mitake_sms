@@ -1,6 +1,8 @@
 # MitakeSms
 
 [![codecov](https://codecov.io/gh/7a6163/mitake_sms/graph/badge.svg?token=QNRP1N3TOP)](https://codecov.io/gh/7a6163/mitake_sms)
+![Gem Version](https://img.shields.io/gem/v/mitake_sms)
+
 
 A Ruby client for the Mitake SMS API, providing a simple and efficient way to send SMS messages through the Mitake SMS service.
 
