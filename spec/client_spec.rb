@@ -35,12 +35,14 @@ RSpec.describe MitakeSms::Client do
       before do
         stubs.post('SmSend') do |env|
           expect(env.url.path).to eq('/SmSend')
-          # Check for hash parameters
-          expect(env.body[:username]).to eq('test_username')
-          expect(env.body[:password]).to eq('test_password')
-          expect(env.body[:dstaddr]).to eq(to)
-          expect(env.body[:smbody]).to eq('Test message')
-          expect(env.body[:CharsetURL]).to eq('UTF8')
+          # Check for query parameters
+          expect(env.params['username']).to eq('test_username')
+          expect(env.params['password']).to eq('test_password')
+          expect(env.params['dstaddr']).to eq(to)
+          expect(env.params['smbody']).to eq('Test message')
+          expect(env.params['CharsetURL']).to eq('UTF8')
+          # Body should be empty
+          expect(env.body).to be_empty
 
           [
             200,
@@ -84,12 +86,14 @@ RSpec.describe MitakeSms::Client do
       before do
         stubs.post('SmBulkSend') do |env|
           expect(env.url.path).to eq('/SmBulkSend')
-          # Check for hash parameters
-          expect(env.body[:username]).to eq('test_username')
-          expect(env.body[:password]).to eq('test_password')
-          expect(env.body[:smbody]).to include('Message 1')
-          expect(env.body[:smbody]).to include('Message 2')
-          expect(env.body[:Encoding_PostIn]).to eq('UTF8')
+          # Check for query parameters
+          expect(env.params['username']).to eq('test_username')
+          expect(env.params['password']).to eq('test_password')
+          expect(env.params['smbody']).to include('Message 1')
+          expect(env.params['smbody']).to include('Message 2')
+          expect(env.params['Encoding_PostIn']).to eq('UTF8')
+          # Body should be empty
+          expect(env.body).to be_empty
 
           [
             200,
@@ -121,11 +125,14 @@ RSpec.describe MitakeSms::Client do
       before do
         stubs.post('SmBulkSend') do |env|
           expect(env.url.path).to eq('/SmBulkSend')
-          expect(env.body[:username]).to eq('test_username')
-          expect(env.body[:password]).to eq('test_password')
-          expect(env.body[:smbody]).to include('Message 1')
-          expect(env.body[:smbody]).to include('Message 2')
-          expect(env.body[:Encoding_PostIn]).to eq('UTF8')
+          # Check for query parameters
+          expect(env.params['username']).to eq('test_username')
+          expect(env.params['password']).to eq('test_password')
+          expect(env.params['smbody']).to include('Message 1')
+          expect(env.params['smbody']).to include('Message 2')
+          expect(env.params['Encoding_PostIn']).to eq('UTF8')
+          # Body should be empty
+          expect(env.body).to be_empty
 
           [
             200,
@@ -167,11 +174,13 @@ RSpec.describe MitakeSms::Client do
 
           if batch_counter == 1
             # First batch should contain Message 1 and Message 2
-            expect(env.body[:username]).to eq('test_username')
-            expect(env.body[:password]).to eq('test_password')
-            expect(env.body[:smbody]).to include('Message 1')
-            expect(env.body[:smbody]).to include('Message 2')
-            expect(env.body[:Encoding_PostIn]).to eq('UTF8')
+            expect(env.params['username']).to eq('test_username')
+            expect(env.params['password']).to eq('test_password')
+            expect(env.params['smbody']).to include('Message 1')
+            expect(env.params['smbody']).to include('Message 2')
+            expect(env.params['Encoding_PostIn']).to eq('UTF8')
+            # Body should be empty
+            expect(env.body).to be_empty
 
             [
               200,
@@ -180,11 +189,13 @@ RSpec.describe MitakeSms::Client do
             ]
           else
             # Second batch should contain Message 3 and Message 4
-            expect(env.body[:username]).to eq('test_username')
-            expect(env.body[:password]).to eq('test_password')
-            expect(env.body[:smbody]).to include('Message 3')
-            expect(env.body[:smbody]).to include('Message 4')
-            expect(env.body[:Encoding_PostIn]).to eq('UTF8')
+            expect(env.params['username']).to eq('test_username')
+            expect(env.params['password']).to eq('test_password')
+            expect(env.params['smbody']).to include('Message 3')
+            expect(env.params['smbody']).to include('Message 4')
+            expect(env.params['Encoding_PostIn']).to eq('UTF8')
+            # Body should be empty
+            expect(env.body).to be_empty
 
             [
               200,

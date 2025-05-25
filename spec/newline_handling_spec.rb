@@ -28,7 +28,7 @@ RSpec.describe 'Newline and special character handling' do
     it 'converts newlines to ASCII code 6 in single SMS' do
       stubs.post('SmSend') do |env|
         # The newline should be converted to ASCII code 6
-        expect(env.body[:smbody]).to include(6.chr)
+        expect(env.params['smbody']).to include(6.chr)
         [200, { 'Content-Type' => 'text/plain' }, "statuscode=1\nmsgid=1234567890\nAccountPoint=100"]
       end
 
@@ -44,7 +44,9 @@ RSpec.describe 'Newline and special character handling' do
 
       stubs.post('SmBulkSend') do |env|
         # Both messages should have newlines converted to ASCII code 6
-        expect(env.body[:smbody]).to include(6.chr)
+        expect(env.params['smbody']).to include(6.chr)
+        # Body should be empty
+        expect(env.body).to be_empty
         [200, { 'Content-Type' => 'text/plain' }, "statuscode=1\nmsgid=1234567890\nAccountPoint=98"]
       end
 
@@ -65,7 +67,9 @@ RSpec.describe 'Newline and special character handling' do
 
       stubs.post('SmPost') do |env|
         # The message should have newlines converted to ASCII code 6
-        expect(env.body[:data]).to include(6.chr)
+        expect(env.params['data']).to include(6.chr)
+        # Body should be empty
+        expect(env.body).to be_empty
         [200, { 'Content-Type' => 'text/plain' }, "statuscode=1\nmsgid=1234567890\nAccountPoint=97"]
       end
 
@@ -78,16 +82,18 @@ RSpec.describe 'Newline and special character handling' do
     let(:to) { '0912345678' }
     let(:text_with_special_chars) { "Message with & and ?" }
 
-    it 'URL encodes special characters in batch SMS' do
+    it 'handles special characters in batch SMS' do
       messages = [
         { to: '0912345678', text: "Message with & and ?" },
         { to: '0922333444', text: "Another with + and =" }
       ]
 
       stubs.post('SmBulkSend') do |env|
-        # Both messages should have special characters URL encoded
-        expect(env.body[:smbody]).to include("Message with & and ?")
-        expect(env.body[:smbody]).to include("Another with + and =")
+        # Both messages should contain the special characters
+        expect(env.params['smbody']).to include("Message with & and ?")
+        expect(env.params['smbody']).to include("Another with + and =")
+        # Body should be empty
+        expect(env.body).to be_empty
         [200, { 'Content-Type' => 'text/plain' }, "statuscode=1\nmsgid=1234567890\nAccountPoint=98"]
       end
 

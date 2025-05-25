@@ -36,15 +36,24 @@ module MitakeSms
       # This is required by the Mitake API to represent line breaks
       processed_text = text.to_s.gsub("\n", 6.chr)
 
-      params = {
+      # Prepare query parameters - all parameters are now sent as query parameters
+      query_params = {
         username: @config.username,
         password: @config.password,
         dstaddr: to,
         smbody: processed_text,
         CharsetURL: charset
       }.merge(options.slice(:from, :response_url, :client_id))
-
-      response = @connection.post('SmSend', params)
+  
+      # Construct the endpoint URL
+      endpoint = "SmSend"
+  
+      response = @connection.post(endpoint) do |req|
+        req.params = query_params
+        # Empty body since all parameters are in the query string
+        req.body = {}
+      end
+      
       handle_response(response)
     end
 
@@ -137,23 +146,32 @@ module MitakeSms
     # @return [MitakeSms::Response] response object
     def send_batch(batch, charset = 'UTF8', options = {})
       require 'uri'
+      
+      # Prepare the batch message content
+      smbody = batch.map do |msg|
+        to = msg[:to]
 
-      params = {
+        # Replace any newline characters with ASCII code 6 (ACK)
+        # This is required by the Mitake API to represent line breaks
+        processed_text = msg[:text].to_s.gsub("\n", 6.chr)
+
+        "#{to}:#{processed_text}"
+      end.join("\n")
+      
+      # All parameters should be sent as query string parameters
+      query_params = {
         username: @config.username,
         password: @config.password,
-        smbody: batch.map do |msg|
-          to = msg[:to]
-
-          # Replace any newline characters with ASCII code 6 (ACK)
-          # This is required by the Mitake API to represent line breaks
-          processed_text = msg[:text].to_s.gsub("\n", 6.chr)
-
-          "#{to}:#{processed_text}"
-        end.join("\n"),
+        smbody: smbody,
         Encoding_PostIn: charset
       }
-
-      response = @connection.post('SmBulkSend', params)
+      
+      # Use empty body with all parameters in query string
+      response = @connection.post('SmBulkSend') do |req|
+        req.params = query_params
+        req.body = {}
+      end
+      
       handle_response(response)
     end
 
@@ -164,10 +182,10 @@ module MitakeSms
     # @return [MitakeSms::Response] response object
     def send_advanced_batch(batch, charset = 'UTF8', options = {})
       require 'uri'
-
+      
       # Format each message according to the advanced format
       # ClientID $$ dstaddr $$ dlvtime $$ vldtime $$ destname $$ response $$ smbody
-      body = batch.map do |msg|
+      data = batch.map do |msg|
         # ClientID is required and must be unique
         # If not provided, generate a unique ID
         client_id = msg[:client_id]
@@ -180,22 +198,28 @@ module MitakeSms
         vldtime = msg[:vldtime] || ''
         dest_name = msg[:dest_name] || ''
         response_url = msg[:response] || ''
-
+        
         # Replace any newline characters in the message text with ASCII code 6 (ACK)
         # This is required by the Mitake API to represent line breaks within message content
         processed_text = msg[:text].to_s.gsub("\n", 6.chr)
-
+        
         [client_id, to, dlvtime, vldtime, dest_name, response_url, processed_text].join('$$')
       end.join("\n")
 
-      params = {
+      # All parameters should be sent as query string parameters
+      query_params = {
         username: @config.username,
         password: @config.password,
-        data: body,
+        data: data,
         Encoding_PostIn: charset
       }
 
-      response = @connection.post('SmPost', params)
+      # Use empty body with all parameters in query string
+      response = @connection.post('SmPost') do |req|
+        req.params = query_params
+        req.body = {}
+      end
+      
       handle_response(response)
     end
 

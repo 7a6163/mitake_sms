@@ -50,7 +50,9 @@ RSpec.describe 'ClientID generation and handling' do
 
         stubs.post('SmPost') do |env|
           # The data should include the custom client ID
-          expect(env.body[:data]).to include('custom-id-123')
+          expect(env.params['data']).to include('custom-id-123')
+          # Body should be empty
+          expect(env.body).to be_empty
           [200, { 'Content-Type' => 'text/plain' }, "statuscode=1\nmsgid=1234567890\nAccountPoint=97"]
         end
 
@@ -71,7 +73,9 @@ RSpec.describe 'ClientID generation and handling' do
         stubs.post('SmPost') do |env|
           # The data should include a generated client ID in the correct format
           client_id_pattern = /\d{17}-[a-f0-9]{8}/
-          expect(env.body[:data]).to match(client_id_pattern)
+          expect(env.params['data']).to match(client_id_pattern)
+          # Body should be empty
+          expect(env.body).to be_empty
           [200, { 'Content-Type' => 'text/plain' }, "statuscode=1\nmsgid=1234567890\nAccountPoint=97"]
         end
 
@@ -93,7 +97,9 @@ RSpec.describe 'ClientID generation and handling' do
         stubs.post('SmPost') do |env|
           # The data should include a generated client ID in the correct format
           client_id_pattern = /\d{17}-[a-f0-9]{8}/
-          expect(env.body[:data]).to match(client_id_pattern)
+          expect(env.params['data']).to match(client_id_pattern)
+          # Body should be empty
+          expect(env.body).to be_empty
           [200, { 'Content-Type' => 'text/plain' }, "statuscode=1\nmsgid=1234567890\nAccountPoint=97"]
         end
 

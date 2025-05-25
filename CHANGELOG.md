@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.0] - 2025-05-25
+### Changed
+- Modified all batch SMS parameters to be sent as query string parameters instead of in the POST body
+- Updated `send_batch` and `send_advanced_batch` methods to use query string parameters
+- Modified tests to verify query string parameter handling for batch SMS
+
+## [1.3.1] - 2025-05-25
+### Changed
+- Modified `CharsetURL` parameter to be sent as a query string parameter instead of a form parameter
+- Updated tests to verify query string parameter handling
+
 ## [1.3.0] - 2025-05-25
 ### Changed
 - Removed automatic URL encoding of message content
