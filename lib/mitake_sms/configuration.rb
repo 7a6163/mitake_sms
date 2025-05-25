@@ -8,7 +8,7 @@ module MitakeSms
 
     setting :username, default: ENV['MITAKE_USERNAME']
     setting :password, default: ENV['MITAKE_PASSWORD']
-    setting :api_url, default: 'https://smsapi.mitake.com.tw/b2c/mtk/'
+    setting :api_url, default: 'https://smsb2c.mitake.com.tw/b2c/mtk/'
     setting :timeout, default: 30
     setting :open_timeout, default: 5
 

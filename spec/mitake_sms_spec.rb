@@ -7,7 +7,7 @@ RSpec.describe MitakeSms do
     MitakeSms.configure do |config|
       config.username = 'test_username'
       config.password = 'test_password'
-      config.api_url = 'https://test.api.mitake.com.tw/'
+      config.api_url = 'https://test.mitake.com.tw/'
       config.timeout = 30
       config.open_timeout = 5
     end
@@ -17,7 +17,7 @@ RSpec.describe MitakeSms do
     it 'sets the configuration' do
       expect(MitakeSms.config.username).to eq('test_username')
       expect(MitakeSms.config.password).to eq('test_password')
-      expect(MitakeSms.config.api_url).to eq('https://test.api.mitake.com.tw/')
+      expect(MitakeSms.config.api_url).to eq('https://test.mitake.com.tw/')
       expect(MitakeSms.config.timeout).to eq(30)
       expect(MitakeSms.config.open_timeout).to eq(5)
     end

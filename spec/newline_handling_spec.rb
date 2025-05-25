@@ -15,7 +15,7 @@ RSpec.describe 'Newline and special character handling' do
     MitakeSms.configure do |c|
       c.username = 'test_username'
       c.password = 'test_password'
-      c.api_url = 'https://test.api.mitake.com.tw/'
+      c.api_url = 'https://test.mitake.com.tw/'
     end
 
     allow_any_instance_of(MitakeSms::Client).to receive(:build_connection).and_return(connection)

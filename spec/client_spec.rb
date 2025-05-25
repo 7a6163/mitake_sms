@@ -9,7 +9,7 @@ RSpec.describe MitakeSms::Client do
     MitakeSms.configure do |c|
       c.username = 'test_username'
       c.password = 'test_password'
-      c.api_url = 'https://test.api.mitake.com.tw/'
+      c.api_url = 'https://test.mitake.com.tw/'
       c.timeout = 30
       c.open_timeout = 5
     end

@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.1] - 2025-05-25
+### Fixed
+- Updated the API URL from `smsapi.mitake.com.tw` to `smsb2c.mitake.com.tw` to match the correct Mitake SMS API endpoint
+- Fixed 404 errors when sending SMS messages
+
 ## [1.5.0] - 2025-05-25
 ### Added
 - Added named parameters (keyword arguments) to `send_sms` method for improved readability and flexibility

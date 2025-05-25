@@ -47,7 +47,7 @@ require 'mitake_sms'
 MitakeSms.configure do |config|
   config.username = 'your_username'  # Your Mitake SMS API username
   config.password = 'your_password'  # Your Mitake SMS API password
-  config.api_url = 'https://smsapi.mitake.com.tw/b2c/mtk/'  # Default API URL
+  config.api_url = 'https://smsb2c.mitake.com.tw/b2c/mtk/'  # Default API URL
 end
 ```
 
