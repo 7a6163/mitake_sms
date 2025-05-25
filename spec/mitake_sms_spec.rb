@@ -37,9 +37,19 @@ RSpec.describe MitakeSms do
       client = instance_double(MitakeSms::Client)
       allow(MitakeSms).to receive(:client).and_return(client)
 
-      expect(client).to receive(:send_sms).with(to: to, text: text, response_url: nil, client_id: nil, charset: 'UTF8')
+      expect(client).to receive(:send_sms).with(to: to, text: text, destname: nil, response_url: nil, client_id: nil, charset: 'UTF8')
 
       MitakeSms.send_sms(to: to, text: text)
+    end
+
+    it 'delegates to client with destname' do
+      client = instance_double(MitakeSms::Client)
+      allow(MitakeSms).to receive(:client).and_return(client)
+      destname = 'Test User'
+
+      expect(client).to receive(:send_sms).with(to: to, text: text, destname: destname, response_url: nil, client_id: nil, charset: 'UTF8')
+
+      MitakeSms.send_sms(to: to, text: text, destname: destname)
     end
   end
 

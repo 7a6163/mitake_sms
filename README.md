@@ -68,6 +68,7 @@ end
 response = MitakeSms.send_sms(
   to: '0912345678',
   text: 'Hello with options!',
+  destname: 'John Doe',  # Recipient name or integration key value
   response_url: 'https://your-callback-url.com/delivery-reports',
   client_id: 'your-client-reference-id',
   charset: 'BIG5'  # Override the default UTF-8 encoding if needed

@@ -45,6 +45,7 @@ RSpec.describe MitakeSms::Client do
           expect(env.body[:password]).to eq('test_password')
           expect(env.body[:dstaddr]).to eq(to)
           expect(env.body[:smbody]).to eq('Test message')
+          expect(env.body[:destname]).to be_nil
 
           [
             200,
@@ -56,6 +57,28 @@ RSpec.describe MitakeSms::Client do
 
       it 'sends an SMS and returns a successful response' do
         response = client.send_sms(to: to, text: text)
+
+        expect(response).to be_success
+        expect(response.message_id).to eq('1234567890')
+        expect(response.account_point).to eq('100')
+      end
+
+      it 'sends an SMS with destname and returns a successful response' do
+        destname = 'Test User'
+        # Create a new stub for this specific test case
+        new_stubs = Faraday::Adapter::Test::Stubs.new
+        new_connection = Faraday.new do |builder|
+          builder.adapter :test, new_stubs
+        end
+        allow_any_instance_of(described_class).to receive(:build_connection).and_return(new_connection)
+        
+        new_stubs.post('SmSend') do |env|
+          # Check for destname in the body
+          expect(env.body[:destname]).to eq(destname)
+          [200, { 'Content-Type' => 'text/plain' }, "statuscode=1\nmsgid=1234567890\nAccountPoint=100"]
+        end
+
+        response = client.send_sms(to: to, text: text, destname: destname)
 
         expect(response).to be_success
         expect(response.message_id).to eq('1234567890')

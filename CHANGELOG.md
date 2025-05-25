@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.0] - 2025-05-25
+### Added
+- Added `destname` parameter to `send_sms` method for recipient name or system integration key value
+- Added tests for the new `destname` parameter
+
 ## [1.5.3] - 2025-05-25
 ### Changed
 - Updated the default API URL to `https://smsapi.mitake.com.tw/api/mtk/`

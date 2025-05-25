@@ -38,16 +38,18 @@ module MitakeSms
     # Send a single SMS message
     # @param to [String] recipient phone number
     # @param text [String] message content
+    # @param destname [String] recipient name or key value for system integration (optional)
     # @param response_url [String] callback URL for delivery reports (optional)
     # @param client_id [String] client reference ID (optional)
     # @param charset [String] character encoding, defaults to 'UTF8' (optional)
     # @param options [Hash] additional options (optional)
     # @return [MitakeSms::Response] response object
-    def send_sms(to:, text:, response_url: nil, client_id: nil, charset: 'UTF8', **options)
+    def send_sms(to:, text:, destname: nil, response_url: nil, client_id: nil, charset: 'UTF8', **options)
       # Forward all parameters to the client method using named parameters
       client.send_sms(
         to: to,
         text: text,
+        destname: destname,
         response_url: response_url,
         client_id: client_id,
         charset: charset,
