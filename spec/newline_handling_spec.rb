@@ -28,7 +28,9 @@ RSpec.describe 'Newline and special character handling' do
     it 'converts newlines to ASCII code 6 in single SMS' do
       stubs.post('SmSend') do |env|
         # The newline should be converted to ASCII code 6
-        expect(env.params['smbody']).to include(6.chr)
+        expect(env.body[:smbody]).to include(6.chr)
+        # Only CharsetURL should be in query parameters
+        expect(env.params['CharsetURL']).to eq('UTF8')
         [200, { 'Content-Type' => 'text/plain' }, "statuscode=1\nmsgid=1234567890\nAccountPoint=100"]
       end
 

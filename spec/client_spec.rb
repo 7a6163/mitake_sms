@@ -35,14 +35,16 @@ RSpec.describe MitakeSms::Client do
       before do
         stubs.post('SmSend') do |env|
           expect(env.url.path).to eq('/SmSend')
-          # Check for query parameters
-          expect(env.params['username']).to eq('test_username')
-          expect(env.params['password']).to eq('test_password')
-          expect(env.params['dstaddr']).to eq(to)
-          expect(env.params['smbody']).to eq('Test message')
+          # Check for query parameters - only CharsetURL should be in query string
           expect(env.params['CharsetURL']).to eq('UTF8')
-          # Body should be empty
-          expect(env.body).to be_empty
+          expect(env.params['username']).to be_nil
+          expect(env.params['password']).to be_nil
+
+          # Check for form parameters - all other parameters should be in POST body
+          expect(env.body[:username]).to eq('test_username')
+          expect(env.body[:password]).to eq('test_password')
+          expect(env.body[:dstaddr]).to eq(to)
+          expect(env.body[:smbody]).to eq('Test message')
 
           [
             200,
