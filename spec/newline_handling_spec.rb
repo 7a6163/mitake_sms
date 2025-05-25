@@ -32,7 +32,7 @@ RSpec.describe 'Newline and special character handling' do
         [200, { 'Content-Type' => 'text/plain' }, "statuscode=1\nmsgid=1234567890\nAccountPoint=100"]
       end
 
-      response = client.send_sms(to, text_with_newlines)
+      response = client.send_sms(to: to, text: text_with_newlines)
       expect(response).to be_success
     end
 

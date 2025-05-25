@@ -55,7 +55,7 @@ end
 
 ```ruby
 # Send a simple SMS (uses UTF-8 encoding by default)
-response = MitakeSms.send_sms('0912345678', 'Hello, this is a test message!')
+response = MitakeSms.send_sms(to: '0912345678', text: 'Hello, this is a test message!')
 
 if response.success?
   puts "Message sent successfully! Message ID: #{response.message_id}"
@@ -66,9 +66,8 @@ end
 
 # With additional options
 response = MitakeSms.send_sms(
-  '0912345678',
-  'Hello with options!',
-  from: 'YourBrand',
+  to: '0912345678',
+  text: 'Hello with options!',
   response_url: 'https://your-callback-url.com/delivery-reports',
   client_id: 'your-client-reference-id',
   charset: 'BIG5'  # Override the default UTF-8 encoding if needed

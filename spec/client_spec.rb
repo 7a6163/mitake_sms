@@ -53,7 +53,7 @@ RSpec.describe MitakeSms::Client do
       end
 
       it 'sends an SMS and returns a successful response' do
-        response = client.send_sms(to, text)
+        response = client.send_sms(to: to, text: text)
 
         expect(response).to be_success
         expect(response.message_id).to eq('1234567890')
@@ -68,7 +68,7 @@ RSpec.describe MitakeSms::Client do
 
       it 'raises an AuthenticationError' do
         expect {
-          client.send_sms(to, text)
+          client.send_sms(to: to, text: text)
         }.to raise_error(MitakeSms::Client::AuthenticationError)
       end
     end

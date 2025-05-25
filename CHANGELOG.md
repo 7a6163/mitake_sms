@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.0] - 2025-05-25
+### Added
+- Added named parameters (keyword arguments) to `send_sms` method for improved readability and flexibility
+
+### Changed
+- Updated `send_sms` method to use named parameters instead of positional parameters
+- Removed `from` parameter from `send_sms` method
+- Updated tests to use named parameters for `send_sms` method
+
 ## [1.4.0] - 2025-05-25
 ### Changed
 - Modified all batch SMS parameters to be sent as query string parameters instead of in the POST body

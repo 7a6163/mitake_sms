@@ -22,15 +22,18 @@ module MitakeSms
     # Send a single SMS
     # @param to [String] recipient phone number
     # @param text [String] message content
-    # @param options [Hash] additional options
-    # @option options [String] :from sender ID
-    # @option options [String] :response_url callback URL for delivery reports
-    # @option options [String] :client_id client reference ID
-    # @option options [String] :charset character encoding, defaults to 'UTF8'
+    # @param response_url [String] callback URL for delivery reports (optional)
+    # @param client_id [String] client reference ID (optional)
+    # @param charset [String] character encoding, defaults to 'UTF8' (optional)
+    # @param options [Hash] additional options (optional)
     # @return [MitakeSms::Response] response object
-    def send_sms(to, text, options = {})
+    def send_sms(to:, text:, response_url: nil, client_id: nil, charset: 'UTF8', **options)
       require 'uri'
-      charset = options.delete(:charset) || 'UTF8'
+      
+      # Create options hash with only non-nil values
+      param_options = {}
+      param_options[:response_url] = response_url if response_url
+      param_options[:client_id] = client_id if client_id
 
       # Replace any newline characters with ASCII code 6 (ACK)
       # This is required by the Mitake API to represent line breaks
@@ -43,7 +46,7 @@ module MitakeSms
         dstaddr: to,
         smbody: processed_text,
         CharsetURL: charset
-      }.merge(options.slice(:from, :response_url, :client_id))
+      }.merge(param_options).merge(options)
   
       # Construct the endpoint URL
       endpoint = "SmSend"
