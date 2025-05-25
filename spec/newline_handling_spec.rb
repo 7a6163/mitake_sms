@@ -27,8 +27,8 @@ RSpec.describe 'Newline and special character handling' do
 
     it 'converts newlines to ASCII code 6 in single SMS' do
       stubs.post('SmSend') do |env|
-        # The newline should be converted to ASCII code 6 and then URL encoded
-        expect(env.body[:smbody]).to include(URI.encode_www_form_component(6.chr))
+        # The newline should be converted to ASCII code 6
+        expect(env.body[:smbody]).to include(6.chr)
         [200, { 'Content-Type' => 'text/plain' }, "statuscode=1\nmsgid=1234567890\nAccountPoint=100"]
       end
 
@@ -43,8 +43,8 @@ RSpec.describe 'Newline and special character handling' do
       ]
 
       stubs.post('SmBulkSend') do |env|
-        # Both messages should have newlines converted to ASCII code 6 and then URL encoded
-        expect(env.body[:smbody]).to include(URI.encode_www_form_component(6.chr))
+        # Both messages should have newlines converted to ASCII code 6
+        expect(env.body[:smbody]).to include(6.chr)
         [200, { 'Content-Type' => 'text/plain' }, "statuscode=1\nmsgid=1234567890\nAccountPoint=98"]
       end
 
@@ -54,9 +54,9 @@ RSpec.describe 'Newline and special character handling' do
 
     it 'converts newlines to ASCII code 6 in advanced batch SMS' do
       messages = [
-        { 
+        {
           client_id: 'test1',
-          to: '0912345678', 
+          to: '0912345678',
           text: "First line\nSecond line",
           dlvtime: '202505251430',
           dest_name: 'Test User'
@@ -64,8 +64,8 @@ RSpec.describe 'Newline and special character handling' do
       ]
 
       stubs.post('SmPost') do |env|
-        # The message should have newlines converted to ASCII code 6 and then URL encoded
-        expect(env.body[:data]).to include(URI.encode_www_form_component(6.chr))
+        # The message should have newlines converted to ASCII code 6
+        expect(env.body[:data]).to include(6.chr)
         [200, { 'Content-Type' => 'text/plain' }, "statuscode=1\nmsgid=1234567890\nAccountPoint=97"]
       end
 
@@ -78,17 +78,6 @@ RSpec.describe 'Newline and special character handling' do
     let(:to) { '0912345678' }
     let(:text_with_special_chars) { "Message with & and ?" }
 
-    it 'URL encodes special characters in single SMS' do
-      stubs.post('SmSend') do |env|
-        # Special characters should be URL encoded
-        expect(env.body[:smbody]).to eq(URI.encode_www_form_component(text_with_special_chars))
-        [200, { 'Content-Type' => 'text/plain' }, "statuscode=1\nmsgid=1234567890\nAccountPoint=100"]
-      end
-
-      response = client.send_sms(to, text_with_special_chars)
-      expect(response).to be_success
-    end
-
     it 'URL encodes special characters in batch SMS' do
       messages = [
         { to: '0912345678', text: "Message with & and ?" },
@@ -97,8 +86,8 @@ RSpec.describe 'Newline and special character handling' do
 
       stubs.post('SmBulkSend') do |env|
         # Both messages should have special characters URL encoded
-        expect(env.body[:smbody]).to include(URI.encode_www_form_component("Message with & and ?"))
-        expect(env.body[:smbody]).to include(URI.encode_www_form_component("Another with + and ="))
+        expect(env.body[:smbody]).to include("Message with & and ?")
+        expect(env.body[:smbody]).to include("Another with + and =")
         [200, { 'Content-Type' => 'text/plain' }, "statuscode=1\nmsgid=1234567890\nAccountPoint=98"]
       end
 

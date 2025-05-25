@@ -31,20 +31,16 @@ module MitakeSms
     def send_sms(to, text, options = {})
       require 'uri'
       charset = options.delete(:charset) || 'UTF8'
-      
+
       # Replace any newline characters with ASCII code 6 (ACK)
       # This is required by the Mitake API to represent line breaks
       processed_text = text.to_s.gsub("\n", 6.chr)
-      
-      # URL encode the message content to handle special characters like '&'
-      # This is required by the Mitake API
-      message_text = URI.encode_www_form_component(processed_text)
 
       params = {
         username: @config.username,
         password: @config.password,
         dstaddr: to,
-        smbody: message_text,
+        smbody: processed_text,
         CharsetURL: charset
       }.merge(options.slice(:from, :response_url, :client_id))
 
@@ -141,26 +137,22 @@ module MitakeSms
     # @return [MitakeSms::Response] response object
     def send_batch(batch, charset = 'UTF8', options = {})
       require 'uri'
-      
+
       params = {
         username: @config.username,
         password: @config.password,
         smbody: batch.map do |msg|
           to = msg[:to]
-          
+
           # Replace any newline characters with ASCII code 6 (ACK)
           # This is required by the Mitake API to represent line breaks
           processed_text = msg[:text].to_s.gsub("\n", 6.chr)
-          
-          # URL encode the message content to handle special characters like '&'
-          # This is required by the Mitake API
-          message_text = URI.encode_www_form_component(processed_text)
-          
-          "#{to}:#{message_text}"
+
+          "#{to}:#{processed_text}"
         end.join("\n"),
         Encoding_PostIn: charset
       }
-      
+
       response = @connection.post('SmBulkSend', params)
       handle_response(response)
     end
@@ -172,7 +164,7 @@ module MitakeSms
     # @return [MitakeSms::Response] response object
     def send_advanced_batch(batch, charset = 'UTF8', options = {})
       require 'uri'
-      
+
       # Format each message according to the advanced format
       # ClientID $$ dstaddr $$ dlvtime $$ vldtime $$ destname $$ response $$ smbody
       body = batch.map do |msg|
@@ -188,16 +180,12 @@ module MitakeSms
         vldtime = msg[:vldtime] || ''
         dest_name = msg[:dest_name] || ''
         response_url = msg[:response] || ''
-        
+
         # Replace any newline characters in the message text with ASCII code 6 (ACK)
         # This is required by the Mitake API to represent line breaks within message content
         processed_text = msg[:text].to_s.gsub("\n", 6.chr)
-        
-        # URL encode the message content to handle special characters like '&'
-        # This is required by the Mitake API
-        text = URI.encode_www_form_component(processed_text)
 
-        [client_id, to, dlvtime, vldtime, dest_name, response_url, text].join('$$')
+        [client_id, to, dlvtime, vldtime, dest_name, response_url, processed_text].join('$$')
       end.join("\n")
 
       params = {

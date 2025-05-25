@@ -39,7 +39,7 @@ RSpec.describe MitakeSms::Client do
           expect(env.body[:username]).to eq('test_username')
           expect(env.body[:password]).to eq('test_password')
           expect(env.body[:dstaddr]).to eq(to)
-          expect(env.body[:smbody]).to eq(URI.encode_www_form_component('Test message'))
+          expect(env.body[:smbody]).to eq('Test message')
           expect(env.body[:CharsetURL]).to eq('UTF8')
 
           [
@@ -87,8 +87,8 @@ RSpec.describe MitakeSms::Client do
           # Check for hash parameters
           expect(env.body[:username]).to eq('test_username')
           expect(env.body[:password]).to eq('test_password')
-          expect(env.body[:smbody]).to include(URI.encode_www_form_component('Message 1'))
-          expect(env.body[:smbody]).to include(URI.encode_www_form_component('Message 2'))
+          expect(env.body[:smbody]).to include('Message 1')
+          expect(env.body[:smbody]).to include('Message 2')
           expect(env.body[:Encoding_PostIn]).to eq('UTF8')
 
           [
@@ -123,8 +123,8 @@ RSpec.describe MitakeSms::Client do
           expect(env.url.path).to eq('/SmBulkSend')
           expect(env.body[:username]).to eq('test_username')
           expect(env.body[:password]).to eq('test_password')
-          expect(env.body[:smbody]).to include(URI.encode_www_form_component('Message 1'))
-          expect(env.body[:smbody]).to include(URI.encode_www_form_component('Message 2'))
+          expect(env.body[:smbody]).to include('Message 1')
+          expect(env.body[:smbody]).to include('Message 2')
           expect(env.body[:Encoding_PostIn]).to eq('UTF8')
 
           [
@@ -158,19 +158,19 @@ RSpec.describe MitakeSms::Client do
       before do
         # Set up counter to track which batch is being processed
         batch_counter = 0
-        
+
         # Stub for both batches
         stubs.post('SmBulkSend') do |env|
           expect(env.url.path).to eq('/SmBulkSend')
-          
+
           batch_counter += 1
-          
+
           if batch_counter == 1
             # First batch should contain Message 1 and Message 2
             expect(env.body[:username]).to eq('test_username')
             expect(env.body[:password]).to eq('test_password')
-            expect(env.body[:smbody]).to include(URI.encode_www_form_component('Message 1'))
-            expect(env.body[:smbody]).to include(URI.encode_www_form_component('Message 2'))
+            expect(env.body[:smbody]).to include('Message 1')
+            expect(env.body[:smbody]).to include('Message 2')
             expect(env.body[:Encoding_PostIn]).to eq('UTF8')
 
             [
@@ -182,8 +182,8 @@ RSpec.describe MitakeSms::Client do
             # Second batch should contain Message 3 and Message 4
             expect(env.body[:username]).to eq('test_username')
             expect(env.body[:password]).to eq('test_password')
-            expect(env.body[:smbody]).to include(URI.encode_www_form_component('Message 3'))
-            expect(env.body[:smbody]).to include(URI.encode_www_form_component('Message 4'))
+            expect(env.body[:smbody]).to include('Message 3')
+            expect(env.body[:smbody]).to include('Message 4')
             expect(env.body[:Encoding_PostIn]).to eq('UTF8')
 
             [
