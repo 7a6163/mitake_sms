@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.3] - 2025-05-25
+### Changed
+- Updated the default API URL to `https://smsapi.mitake.com.tw/api/mtk/`
+- Cleaned up whitespace in the codebase
+
 ## [1.5.2] - 2025-05-25
 ### Changed
 - Modified `send_sms` method to keep only `CharsetURL` in query string and put all other parameters in POST body
