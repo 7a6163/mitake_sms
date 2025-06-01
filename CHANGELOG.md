@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.0] - 2025-05-26
+### Changed
+- Modified `send_batch` method to use the advanced format with $$ separators
+- Updated batch SMS request to place data in the request body with 'text/plain' content type
+- Updated tests to verify the new batch SMS request format
+
+### Removed
+- Removed `advanced_batch_send_with_limit` method to simplify the API surface
+
 ## [1.6.0] - 2025-05-25
 ### Added
 - Added `destname` parameter to `send_sms` method for recipient name or system integration key value

@@ -109,16 +109,22 @@ RSpec.describe MitakeSms::Client do
 
     context 'when the request is successful' do
       before do
+        # Allow the client to generate unique client IDs for testing
+        allow(client).to receive(:generate_unique_client_id).and_return('test-client-id')
+        
         stubs.post('SmBulkSend') do |env|
           expect(env.url.path).to eq('/SmBulkSend')
           # Check for query parameters
           expect(env.params['username']).to eq('test_username')
           expect(env.params['password']).to eq('test_password')
-          expect(env.params['smbody']).to include('Message 1')
-          expect(env.params['smbody']).to include('Message 2')
           expect(env.params['Encoding_PostIn']).to eq('UTF8')
-          # Body should be empty
-          expect(env.body).to be_empty
+          # Body should contain formatted message data with $$ separators
+          expect(env.body).to include('test-client-id')
+          expect(env.body).to include('0912345678')
+          expect(env.body).to include('Message 1')
+          expect(env.body).to include('0922333444')
+          expect(env.body).to include('Message 2')
+          expect(env.body).to include('$$')
 
           [
             200,
@@ -148,16 +154,22 @@ RSpec.describe MitakeSms::Client do
       end
 
       before do
+        # Allow the client to generate unique client IDs for testing
+        allow(client).to receive(:generate_unique_client_id).and_return('test-client-id')
+        
         stubs.post('SmBulkSend') do |env|
           expect(env.url.path).to eq('/SmBulkSend')
           # Check for query parameters
           expect(env.params['username']).to eq('test_username')
           expect(env.params['password']).to eq('test_password')
-          expect(env.params['smbody']).to include('Message 1')
-          expect(env.params['smbody']).to include('Message 2')
           expect(env.params['Encoding_PostIn']).to eq('UTF8')
-          # Body should be empty
-          expect(env.body).to be_empty
+          # Body should contain formatted message data with $$ separators
+          expect(env.body).to include('test-client-id')
+          expect(env.body).to include('0912345678')
+          expect(env.body).to include('Message 1')
+          expect(env.body).to include('0922333444')
+          expect(env.body).to include('Message 2')
+          expect(env.body).to include('$$')
 
           [
             200,
@@ -188,6 +200,9 @@ RSpec.describe MitakeSms::Client do
       end
 
       before do
+        # Allow the client to generate unique client IDs for testing
+        allow(client).to receive(:generate_unique_client_id).and_return('test-client-id')
+        
         # Set up counter to track which batch is being processed
         batch_counter = 0
 
@@ -201,11 +216,14 @@ RSpec.describe MitakeSms::Client do
             # First batch should contain Message 1 and Message 2
             expect(env.params['username']).to eq('test_username')
             expect(env.params['password']).to eq('test_password')
-            expect(env.params['smbody']).to include('Message 1')
-            expect(env.params['smbody']).to include('Message 2')
             expect(env.params['Encoding_PostIn']).to eq('UTF8')
-            # Body should be empty
-            expect(env.body).to be_empty
+            # Body should contain formatted message data with $$ separators
+            expect(env.body).to include('test-client-id')
+            expect(env.body).to include('0912345678')
+            expect(env.body).to include('Message 1')
+            expect(env.body).to include('0922333444')
+            expect(env.body).to include('Message 2')
+            expect(env.body).to include('$$')
 
             [
               200,
@@ -216,11 +234,14 @@ RSpec.describe MitakeSms::Client do
             # Second batch should contain Message 3 and Message 4
             expect(env.params['username']).to eq('test_username')
             expect(env.params['password']).to eq('test_password')
-            expect(env.params['smbody']).to include('Message 3')
-            expect(env.params['smbody']).to include('Message 4')
             expect(env.params['Encoding_PostIn']).to eq('UTF8')
-            # Body should be empty
-            expect(env.body).to be_empty
+            # Body should contain formatted message data with $$ separators
+            expect(env.body).to include('test-client-id')
+            expect(env.body).to include('0933555666')
+            expect(env.body).to include('Message 3')
+            expect(env.body).to include('0944666777')
+            expect(env.body).to include('Message 4')
+            expect(env.body).to include('$$')
 
             [
               200,

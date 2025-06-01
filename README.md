@@ -141,9 +141,9 @@ responses.each_with_index do |batch_response, index|
 end
 ```
 
-### Sending Advanced Format Batch SMS
+### Sending Batch SMS with Advanced Format
 
-The advanced format allows more control over each message in the batch, including scheduled delivery, validity period, recipient name, and more:
+The batch_send method now uses the advanced format by default, which provides more control over each message in the batch, including scheduled delivery, validity period, recipient name, and more:
 
 ```ruby
 # Create messages with advanced options
@@ -153,8 +153,8 @@ messages = [
     to: '0912345678',                    # Required recipient phone number
     dlvtime: '20250526120000',           # Optional delivery time (YYYYMMDDhhmmss)
     vldtime: '20250527120000',           # Optional validity period (YYYYMMDDhhmmss)
-    dest_name: '大寶',                   # Optional recipient name
-    response: 'https://callback.url',    # Optional callback URL
+    destname: '大寶',                    # Optional recipient name
+    response_url: 'https://callback.url', # Optional callback URL
     text: '這是一則測試簡訊'             # Required message content
   },
   {
@@ -178,8 +178,8 @@ messages = [
 # - Long messages will be automatically split into multiple SMS messages if your account doesn't
 #   have long message permissions
 
-# Send using advanced format (automatically handles 500 message limit)
-response = MitakeSms.advanced_batch_send(messages)
+# Send using batch_send (automatically handles the advanced format)
+response = MitakeSms.batch_send(messages)
 
 # Process response similar to regular batch sending
 if response.is_a?(MitakeSms::Response) && response.success?

@@ -155,29 +155,42 @@ module MitakeSms
     def send_batch(batch, charset = 'UTF8', options = {})
       require 'uri'
 
-      # Prepare the batch message content
-      smbody = batch.map do |msg|
-        to = msg[:to]
+      # Format each message according to the advanced format
+      # ClientID $$ dstaddr $$ dlvtime $$ vldtime $$ destname $$ response $$ smbody
+      data = batch.map do |msg|
+        # ClientID is required and must be unique
+        # If not provided, generate a unique ID
+        client_id = msg[:client_id]
+        if client_id.nil? || client_id.empty?
+          client_id = generate_unique_client_id
+        end
 
-        # Replace any newline characters with ASCII code 6 (ACK)
-        # This is required by the Mitake API to represent line breaks
+        to = msg[:to]
+        dlvtime = msg[:dlvtime] || ''
+        vldtime = msg[:vldtime] || ''
+        dest_name = msg[:destname] || ''
+        response_url = msg[:response_url] || ''
+
+        # Replace any newline characters in the message text with ASCII code 6 (ACK)
+        # This is required by the Mitake API to represent line breaks within message content
         processed_text = msg[:text].to_s.gsub("\n", 6.chr)
 
-        "#{to}:#{processed_text}"
+        # Format according to API documentation: ClientID $$ dstaddr $$ dlvtime $$ vldtime $$ destname $$ response $$ smbody
+        [client_id, to, dlvtime, vldtime, dest_name, response_url, processed_text].join('$$')
       end.join("\n")
 
-      # All parameters should be sent as query string parameters
+      # Parameters for the request
       query_params = {
         username: @config.username,
         password: @config.password,
-        smbody: smbody,
         Encoding_PostIn: charset
       }
 
-      # Use empty body with all parameters in query string
+      # According to the API documentation, the data should be in the request body
       response = @connection.post('SmBulkSend') do |req|
         req.params = query_params
-        req.body = {}
+        req.body = data
+        req.headers['Content-Type'] = 'text/plain'
       end
 
       handle_response(response)

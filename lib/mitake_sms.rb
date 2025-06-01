@@ -100,15 +100,6 @@ module MitakeSms
       client.advanced_batch_send(messages, options)
     end
     
-    # Send multiple SMS messages in a single request with a limit per request using advanced format
-    # @param messages [Array<Hash>] array of message hashes with advanced options
-    # @param limit [Integer] maximum number of messages per request (default: 500)
-    # @param options [Hash] additional options
-    # @option options [String] :charset character encoding, defaults to 'UTF8'
 
-    # @return [MitakeSms::Response, Array<MitakeSms::Response>] response object or array of response objects if batch was split
-    def advanced_batch_send_with_limit(messages, limit = 500, options = {})
-      client.advanced_batch_send_with_limit(messages, limit, options)
-    end
   end
 end
