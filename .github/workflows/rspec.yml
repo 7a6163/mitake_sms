@@ -10,25 +10,33 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
+    strategy:
+      fail-fast: false
+      matrix:
+        # The gemspec claims >= 3.3.0, so the oldest and newest supported
+        # releases both need to be proven.
+        ruby-version: ['3.3', '3.4', '4.0']
+
+    name: Ruby ${{ matrix.ruby-version }}
+
+    # A break in ruby/head is upstream's, not this gem's.
+    continue-on-error: ${{ matrix.ruby-version == 'head' }}
+
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
 
     - name: Set up Ruby
       uses: ruby/setup-ruby@v1
       with:
-        ruby-version: '3.3'
+        ruby-version: ${{ matrix.ruby-version }}
         bundler-cache: true
-
-    - name: Install dependencies
-      run: |
-        gem install bundler
-        bundle install
 
     - name: Run RSpec tests
       run: bundle exec rspec
 
     - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v5
+      if: matrix.ruby-version == '3.4'
+      uses: codecov/codecov-action@v7
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
         files: ./coverage/coverage.xml

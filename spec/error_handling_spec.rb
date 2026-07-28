@@ -93,24 +93,6 @@ RSpec.describe 'Error handling and edge cases' do
     end
   end
 
-  describe 'batch_send_with_limit edge cases' do
-    it 'handles empty message array with limit' do
-      messages = []
-      limit = 300
-
-      stubs.post('SmBulkSend') do |env|
-        expect(env.body).to be_empty
-        expect(env.params['username']).to eq('test_username')
-        expect(env.params['password']).to eq('test_password')
-        expect(env.params['Encoding_PostIn']).to eq('UTF8')
-        [200, { 'Content-Type' => 'text/plain' }, "statuscode=1\nmsgid=1234567890\nAccountPoint=100"]
-      end
-
-      response = client.batch_send_with_limit(messages, limit)
-      expect(response).to be_success
-    end
-  end
-
   describe 'configuration' do
     it 'uses configured timeout values' do
       MitakeSms.configure do |c|

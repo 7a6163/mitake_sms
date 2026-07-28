@@ -8,4 +8,6 @@ gemspec
 group :development, :test do
   # These gems are used for development but not included in the gem
   gem "irb"
+  # pry loads ostruct, which is no longer a default gem as of Ruby 4.0
+  gem "ostruct"
 end

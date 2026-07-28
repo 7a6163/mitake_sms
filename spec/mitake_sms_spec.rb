@@ -32,24 +32,29 @@ RSpec.describe MitakeSms do
   describe '.send_sms' do
     let(:to) { '0912345678' }
     let(:text) { 'Test message' }
+    let(:client) { instance_double(MitakeSms::Client) }
+
+    before { allow(MitakeSms).to receive(:client).and_return(client) }
 
     it 'delegates to client' do
-      client = instance_double(MitakeSms::Client)
-      allow(MitakeSms).to receive(:client).and_return(client)
-
-      expect(client).to receive(:send_sms).with(to: to, text: text, destname: nil, response_url: nil, client_id: nil, charset: 'UTF8')
+      expect(client).to receive(:send_sms)
+        .with(to: to, text: text, destname: nil, response_url: nil, client_id: nil)
 
       MitakeSms.send_sms(to: to, text: text)
     end
 
     it 'delegates to client with destname' do
-      client = instance_double(MitakeSms::Client)
-      allow(MitakeSms).to receive(:client).and_return(client)
-      destname = 'Test User'
+      expect(client).to receive(:send_sms)
+        .with(to: to, text: text, destname: 'Test User', response_url: nil, client_id: nil)
 
-      expect(client).to receive(:send_sms).with(to: to, text: text, destname: destname, response_url: nil, client_id: nil, charset: 'UTF8')
+      MitakeSms.send_sms(to: to, text: text, destname: 'Test User')
+    end
 
-      MitakeSms.send_sms(to: to, text: text, destname: destname)
+    it 'forwards any other documented field' do
+      expect(client).to receive(:send_sms)
+        .with(to: to, text: text, destname: nil, response_url: nil, client_id: nil, dlvtime: '20250526120000')
+
+      MitakeSms.send_sms(to: to, text: text, dlvtime: '20250526120000')
     end
   end
 
@@ -60,62 +65,22 @@ RSpec.describe MitakeSms do
         { to: '0922333444', text: 'Message 2' }
       ]
     end
+    let(:client) { instance_double(MitakeSms::Client) }
+
+    before { allow(MitakeSms).to receive(:client).and_return(client) }
 
     it 'delegates to client with default options' do
-      client = instance_double(MitakeSms::Client)
-      allow(MitakeSms).to receive(:client).and_return(client)
-
-      expect(client).to receive(:batch_send_with_limit).with(messages, 500, {})
+      expect(client).to receive(:batch_send).with(messages, {})
 
       MitakeSms.batch_send(messages)
     end
 
     it 'delegates to client with custom options' do
-      client = instance_double(MitakeSms::Client)
-      allow(MitakeSms).to receive(:client).and_return(client)
-      options = { charset: 'BIG5' }
+      options = { smsPointFlag: '1' }
 
-      expect(client).to receive(:batch_send_with_limit).with(messages, 500, options)
+      expect(client).to receive(:batch_send).with(messages, options)
 
       MitakeSms.batch_send(messages, options)
-    end
-  end
-
-  describe '.batch_send_with_limit' do
-    let(:messages) do
-      [
-        { to: '0912345678', text: 'Message 1' },
-        { to: '0922333444', text: 'Message 2' }
-      ]
-    end
-    let(:limit) { 10 }
-
-    it 'delegates to client with the specified limit' do
-      client = instance_double(MitakeSms::Client)
-      allow(MitakeSms).to receive(:client).and_return(client)
-
-      expect(client).to receive(:batch_send_with_limit).with(messages, limit, {})
-
-      MitakeSms.batch_send_with_limit(messages, limit)
-    end
-
-    it 'uses default limit when not specified' do
-      client = instance_double(MitakeSms::Client)
-      allow(MitakeSms).to receive(:client).and_return(client)
-
-      expect(client).to receive(:batch_send_with_limit).with(messages, 500, {})
-
-      MitakeSms.batch_send_with_limit(messages)
-    end
-
-    it 'delegates to client with options' do
-      client = instance_double(MitakeSms::Client)
-      allow(MitakeSms).to receive(:client).and_return(client)
-      options = { charset: 'BIG5' }
-
-      expect(client).to receive(:batch_send_with_limit).with(messages, limit, options)
-
-      MitakeSms.batch_send_with_limit(messages, limit, options)
     end
   end
 end
