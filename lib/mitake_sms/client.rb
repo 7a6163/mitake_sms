@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require 'faraday'
-require 'faraday/multipart'
+require 'securerandom'
 require_relative 'configuration'
 require_relative 'response'
 
@@ -11,6 +11,21 @@ module MitakeSms
     class AuthenticationError < Error; end
     class InvalidRequestError < Error; end
     class ServerError < Error; end
+
+    # The Mitake API represents a line break inside smbody as ASCII code 6.
+    LINE_BREAK = 6.chr
+
+    BATCH_LIMIT = 500
+
+    # The API also accepts Big5, but it only labels the payload and never
+    # converts it, so sending anything other than UTF8 just invites mojibake.
+    CHARSET = 'UTF8'
+
+    FIELD_SEPARATOR = '$$'
+
+    # Every SmBulkSend field except smbody, in wire order. A '$$' or a line
+    # break in any of these shifts the remaining fields of the row.
+    STRUCTURAL_FIELDS = %i[client_id to dlvtime vldtime destname response_url].freeze
 
     # Initialize a new MitakeSms::Client
     # @param config [MitakeSms::Configuration] configuration object
@@ -25,220 +40,97 @@ module MitakeSms
     # @param destname [String] recipient name or key value for system integration (optional)
     # @param response_url [String] callback URL for delivery reports (optional)
     # @param client_id [String] client reference ID (optional)
-    # @param charset [String] character encoding, defaults to 'UTF8' (optional)
-    # @param options [Hash] additional options (optional)
+    # @param options [Hash] any other documented SmSend field, such as
+    #   :dlvtime, :vldtime, :objectID or :smsPointFlag
     # @return [MitakeSms::Response] response object
-    def send_sms(to:, text:, destname: nil, response_url: nil, client_id: nil, charset: 'UTF8', **options)
-      require 'uri'
-
-      # Create options hash with only non-nil values
-      param_options = {}
-      param_options[:destname] = destname if destname
-      param_options[:response_url] = response_url if response_url
-      param_options[:client_id] = client_id if client_id
-
-      # Replace any newline characters with ASCII code 6 (ACK)
-      # This is required by the Mitake API to represent line breaks
-      processed_text = text.to_s.gsub("\n", 6.chr)
-
-      # Prepare query parameters - only CharsetURL is sent as query parameter
-      query_params = {
-        CharsetURL: charset
-      }
-
-      # Prepare form parameters - all other parameters are sent in the POST body
+    def send_sms(to:, text:, destname: nil, response_url: nil, client_id: nil, **options)
       form_params = {
         username: @config.username,
         password: @config.password,
         dstaddr: to,
-        smbody: processed_text
-      }.merge(param_options).merge(options)
+        smbody: normalize_body(text)
+      }
+      form_params[:destname] = destname if destname
+      form_params[:response] = response_url if response_url
+      form_params[:clientid] = client_id if client_id
 
-      # Construct the endpoint URL
-      endpoint = "SmSend"
-
-      response = @connection.post(endpoint) do |req|
-        req.params = query_params
-        req.body = form_params
+      perform_request('SmSend', params: { CharsetURL: CHARSET }) do |req|
+        req.body = form_params.merge(options)
       end
-
-      handle_response(response)
     end
 
-    # Send multiple SMS in a single request
+    # Send multiple SMS in a single request, splitting at the API's 500 message limit
     # @param messages [Array<Hash>] array of message hashes
-    #   Each hash should contain :to and :text keys, and can include :from, :response_url, :client_id
-    # @param options [Hash] additional options
-    # @option options [String] :charset character encoding, defaults to 'UTF8'
-    # @option options [Boolean] :skip_encoding skip URL encoding (for tests)
+    #   Each hash requires :to and :text, and may include :client_id, :dlvtime,
+    #   :vldtime, :destname and :response_url
+    # @param options [Hash] any other documented SmBulkSend field, such as
+    #   :objectID or :smsPointFlag
+    # @raise [ArgumentError] if a field other than :text contains '$$' or a line break
     # @return [MitakeSms::Response, Array<MitakeSms::Response>] response object or array of response objects if batch was split
     def batch_send(messages, options = {})
-      # Mitake SMS API has a limit of 500 messages per request
-      # Automatically split larger batches into multiple requests of 500 messages each
-      batch_send_with_limit(messages, 500, options)
-    end
+      messages.each_with_index { |msg, index| validate_row!(msg, index) }
 
-    # Send multiple SMS in a single request with a limit per request
-    # @param messages [Array<Hash>] array of message hashes
-    #   Each hash should contain :to and :text keys, and can include :from, :response_url, :client_id
-    # @param limit [Integer] maximum number of messages per request (default: 500)
-    # @param options [Hash] additional options
-    # @option options [String] :charset character encoding, defaults to 'UTF8'
-    # @option options [Boolean] :skip_encoding skip URL encoding (for tests)
-    # @return [MitakeSms::Response, Array<MitakeSms::Response>] response object or array of response objects if batch was split
-    def batch_send_with_limit(messages, limit = 500, options = {})
-      charset = options[:charset] || 'UTF8'
-
-      # If messages count is within the limit, use the regular batch send
-      return send_batch(messages, charset, options) if messages.size <= limit
-
-      # Otherwise, split into batches of the specified limit
-      responses = []
-      messages.each_slice(limit) do |batch|
-        responses << send_batch(batch, charset, options)
-      end
-
-      # Return array of responses
-      responses
-    end
-
-    # Send multiple SMS in a single request using advanced format
-    # @param messages [Array<Hash>] array of message hashes with advanced options
-    #   Each hash can contain the following keys:
-    #   - :client_id [String] client reference ID (required)
-    #   - :to [String] recipient phone number (required)
-    #   - :dlvtime [String] delivery time in format YYYYMMDDHHMMSS (optional)
-    #   - :vldtime [String] valid until time in format YYYYMMDDHHMMSS (optional)
-    #   - :dest_name [String] recipient name (optional)
-    #   - :response [String] callback URL for delivery reports (optional)
-    #   - :text [String] message content (required)
-    # @param options [Hash] additional options
-    # @option options [String] :charset character encoding, defaults to 'UTF8'
-    # @option options [Boolean] :skip_encoding skip URL encoding (for tests)
-    # @return [MitakeSms::Response, Array<MitakeSms::Response>] response object or array of response objects if batch was split
-    def advanced_batch_send(messages, options = {})
-      # Mitake SMS API has a limit of 500 messages per request
-      # Automatically split larger batches into multiple requests of 500 messages each
-      advanced_batch_send_with_limit(messages, 500, options)
-    end
-
-    # Send multiple SMS in a single request with a limit per request using advanced format
-    # @param messages [Array<Hash>] array of message hashes with advanced options
-    # @param limit [Integer] maximum number of messages per request (default: 500)
-    # @param options [Hash] additional options
-    # @option options [String] :charset character encoding, defaults to 'UTF8'
-    # @option options [Boolean] :skip_encoding skip URL encoding (for tests)
-    # @return [MitakeSms::Response, Array<MitakeSms::Response>] response object or array of response objects if batch was split
-    def advanced_batch_send_with_limit(messages, limit = 500, options = {})
-      charset = options[:charset] || 'UTF8'
-
-      # If messages count is within the limit, use the regular batch send
-      return send_advanced_batch(messages, charset, options) if messages.size <= limit
-
-      # Otherwise, split into batches of the specified limit
-      responses = []
-      messages.each_slice(limit) do |batch|
-        responses << send_advanced_batch(batch, charset, options)
-      end
-
-      # Return array of responses
-      responses
+      batch_send_with_limit(messages, BATCH_LIMIT, options)
     end
 
     private
 
-    # Internal method to send a single batch
-    # @param batch [Array<Hash>] array of message hashes for a single batch
-    # @param charset [String] character encoding, defaults to 'UTF8'
-    # @param options [Hash] additional options
-    # @return [MitakeSms::Response] response object
-    def send_batch(batch, charset = 'UTF8', options = {})
-      require 'uri'
+    def batch_send_with_limit(messages, limit, options)
+      return send_batch(messages, options) if messages.size <= limit
 
-      # Format each message according to the advanced format
-      # ClientID $$ dstaddr $$ dlvtime $$ vldtime $$ destname $$ response $$ smbody
-      data = batch.map do |msg|
-        # ClientID is required and must be unique
-        # If not provided, generate a unique ID
-        client_id = msg[:client_id]
-        if client_id.nil? || client_id.empty?
-          client_id = generate_unique_client_id
-        end
-
-        to = msg[:to]
-        dlvtime = msg[:dlvtime] || ''
-        vldtime = msg[:vldtime] || ''
-        dest_name = msg[:destname] || ''
-        response_url = msg[:response_url] || ''
-
-        # Replace any newline characters in the message text with ASCII code 6 (ACK)
-        # This is required by the Mitake API to represent line breaks within message content
-        processed_text = msg[:text].to_s.gsub("\n", 6.chr)
-
-        # Format according to API documentation: ClientID $$ dstaddr $$ dlvtime $$ vldtime $$ destname $$ response $$ smbody
-        [client_id, to, dlvtime, vldtime, dest_name, response_url, processed_text].join('$$')
-      end.join("\n")
-
-      # Parameters for the request
-      query_params = {
-        username: @config.username,
-        password: @config.password,
-        Encoding_PostIn: charset
-      }
-
-      # According to the API documentation, the data should be in the request body
-      response = @connection.post('SmBulkSend') do |req|
-        req.params = query_params
-        req.body = data
-        req.headers['Content-Type'] = 'text/plain'
-      end
-
-      handle_response(response)
+      messages.each_slice(limit).map { |batch| send_batch(batch, options) }
     end
 
-    # Internal method to send a single batch using advanced format
-    # @param batch [Array<Hash>] array of message hashes for a single batch with advanced options
-    # @param charset [String] character encoding, defaults to 'UTF8'
-    # @param options [Hash] additional options
-    # @return [MitakeSms::Response] response object
-    def send_advanced_batch(batch, charset = 'UTF8', options = {})
-      require 'uri'
-
-      # Format each message according to the advanced format
-      # ClientID $$ dstaddr $$ dlvtime $$ vldtime $$ destname $$ response $$ smbody
-      data = batch.map do |msg|
-        # ClientID is required and must be unique
-        # If not provided, generate a unique ID
-        client_id = msg[:client_id]
-        if client_id.nil? || client_id.empty?
-          client_id = generate_unique_client_id
-        end
-
-        to = msg[:to]
-        dlvtime = msg[:dlvtime] || ''
-        vldtime = msg[:vldtime] || ''
-        dest_name = msg[:dest_name] || ''
-        response_url = msg[:response] || ''
-
-        # Replace any newline characters in the message text with ASCII code 6 (ACK)
-        # This is required by the Mitake API to represent line breaks within message content
-        processed_text = msg[:text].to_s.gsub("\n", 6.chr)
-
-        [client_id, to, dlvtime, vldtime, dest_name, response_url, processed_text].join('$$')
-      end.join("\n")
-
-      # All parameters should be sent as query string parameters
+    def send_batch(batch, options)
       query_params = {
         username: @config.username,
         password: @config.password,
-        data: data,
-        Encoding_PostIn: charset
-      }
+        Encoding_PostIn: CHARSET
+      }.merge(options)
 
-      # Use empty body with all parameters in query string
-      response = @connection.post('SmPost') do |req|
-        req.params = query_params
-        req.body = {}
+      perform_request('SmBulkSend', params: query_params) do |req|
+        req.body = batch.map { |msg| format_batch_row(msg) }.join("\n")
+        req.headers['Content-Type'] = 'text/plain'
+      end
+    end
+
+    # ClientID $$ dstaddr $$ dlvtime $$ vldtime $$ destname $$ response $$ smbody
+    def format_batch_row(msg)
+      client_id = msg[:client_id]
+      client_id = generate_unique_client_id if client_id.to_s.empty?
+
+      [
+        client_id,
+        msg[:to],
+        msg[:dlvtime],
+        msg[:vldtime],
+        msg[:destname],
+        msg[:response_url],
+        normalize_body(msg[:text])
+      ].join(FIELD_SEPARATOR)
+    end
+
+    def validate_row!(msg, index)
+      STRUCTURAL_FIELDS.each do |field|
+        value = msg[field].to_s
+        next unless value.include?(FIELD_SEPARATOR) || value.match?(/[\r\n]/)
+
+        raise ArgumentError,
+              "messages[#{index}][:#{field}] must not contain #{FIELD_SEPARATOR.inspect} or a line break, " \
+              'because both are SmBulkSend delimiters'
+      end
+    end
+
+    # Mitake expects UTF8 bytes with ASCII code 6 standing in for a line break.
+    # Transcoding also keeps a batch of mixed-encoding strings from failing to join.
+    def normalize_body(text)
+      text.to_s.encode(Encoding::UTF_8).gsub(/\r\n?|\n/, LINE_BREAK)
+    end
+
+    def perform_request(endpoint, params:)
+      response = @connection.post(endpoint) do |req|
+        req.params = params
+        yield req
       end
 
       handle_response(response)
@@ -247,7 +139,6 @@ module MitakeSms
     def build_connection
       Faraday.new(url: @config.api_url) do |conn|
         conn.request :url_encoded
-        conn.request :multipart
         conn.adapter Faraday.default_adapter
         conn.options.timeout = @config.timeout
         conn.options.open_timeout = @config.open_timeout
@@ -269,15 +160,10 @@ module MitakeSms
       end
     end
 
-    # Generate a unique client ID for SMS messages
-    # @return [String] a unique ID combining timestamp and random values
+    # Mitake uses the client ID to suppress duplicate sends within 12 hours,
+    # so it has to be unique per message rather than merely random.
     def generate_unique_client_id
-      require 'securerandom'
-
-      # Generate a unique ID using timestamp (to milliseconds) and a random UUID portion
-      timestamp = Time.now.strftime('%Y%m%d%H%M%S%L')
-      random_part = SecureRandom.uuid.gsub('-', '')[0, 8]
-      "#{timestamp}-#{random_part}"
+      "#{Time.now.strftime('%Y%m%d%H%M%S%L')}-#{SecureRandom.uuid.delete('-')[0, 8]}"
     end
   end
 end

@@ -84,6 +84,39 @@ RSpec.describe MitakeSms::Client do
         expect(response.message_id).to eq('1234567890')
         expect(response.account_point).to eq('100')
       end
+
+      it 'maps response_url and client_id to the API field names' do
+        new_stubs = Faraday::Adapter::Test::Stubs.new
+        new_connection = Faraday.new { |builder| builder.adapter :test, new_stubs }
+        allow_any_instance_of(described_class).to receive(:build_connection).and_return(new_connection)
+
+        new_stubs.post('SmSend') do |env|
+          expect(env.body[:response]).to eq('https://example.com/callback')
+          expect(env.body[:clientid]).to eq('abc-123')
+          expect(env.body).not_to have_key(:response_url)
+          expect(env.body).not_to have_key(:client_id)
+          [200, { 'Content-Type' => 'text/plain' }, "statuscode=1\nmsgid=1234567890\nAccountPoint=100"]
+        end
+
+        response = client.send_sms(
+          to: to,
+          text: text,
+          response_url: 'https://example.com/callback',
+          client_id: 'abc-123'
+        )
+
+        expect(response).to be_success
+      end
+    end
+
+    context 'when the connection fails' do
+      before do
+        stubs.post('SmSend') { raise Faraday::ConnectionFailed, 'connection refused' }
+      end
+
+      it 'lets the Faraday error through so callers can retry on its class' do
+        expect { client.send_sms(to: to, text: text) }.to raise_error(Faraday::ConnectionFailed)
+      end
     end
 
     context 'when authentication fails' do
@@ -107,166 +140,136 @@ RSpec.describe MitakeSms::Client do
       ]
     end
 
-    context 'when the request is successful' do
-      before do
-        # Allow the client to generate unique client IDs for testing
-        allow(client).to receive(:generate_unique_client_id).and_return('test-client-id')
-        
-        stubs.post('SmBulkSend') do |env|
-          expect(env.url.path).to eq('/SmBulkSend')
-          # Check for query parameters
-          expect(env.params['username']).to eq('test_username')
-          expect(env.params['password']).to eq('test_password')
-          expect(env.params['Encoding_PostIn']).to eq('UTF8')
-          # Body should contain formatted message data with $$ separators
-          expect(env.body).to include('test-client-id')
-          expect(env.body).to include('0912345678')
-          expect(env.body).to include('Message 1')
-          expect(env.body).to include('0922333444')
-          expect(env.body).to include('Message 2')
-          expect(env.body).to include('$$')
-
-          [
-            200,
-            { 'Content-Type' => 'text/plain' },
-            "statuscode=1\nmsgid=1234567890\nAccountPoint=98"
-          ]
-        end
+    # Faraday test stubs match in registration order, so each example registers
+    # its own rather than inheriting one from an enclosing before block.
+    def stub_bulk_send(body = "statuscode=1\nmsgid=1234567890\nAccountPoint=98", &capture)
+      stubs.post('SmBulkSend') do |env|
+        capture&.call(env)
+        [200, { 'Content-Type' => 'text/plain' }, body]
       end
+    end
 
-      it 'sends batch SMS and returns a successful response' do
+    before { allow(client).to receive(:generate_unique_client_id).and_return('test-client-id') }
+
+    context 'when the request is successful' do
+      it 'sends the credentials and charset in the query string, per the API' do
+        seen = nil
+        stub_bulk_send { |env| seen = env }
+
         response = client.batch_send(messages)
 
+        expect(seen.url.path).to eq('/SmBulkSend')
+        expect(seen.params).to include(
+          'username' => 'test_username',
+          'password' => 'test_password',
+          'Encoding_PostIn' => 'UTF8'
+        )
+        expect(seen.request_headers['Content-Type']).to eq('text/plain')
         expect(response).to be_success
         expect(response.message_id).to eq('1234567890')
         expect(response.account_point).to eq('98')
       end
-    end
-  end
 
-  describe '#batch_send_with_limit' do
-    context 'when messages count is within the limit' do
-      let(:messages) do
-        [
-          { to: '0912345678', text: 'Message 1' },
-          { to: '0922333444', text: 'Message 2' }
-        ]
-      end
+      it 'lays the row out in the order the API documents' do
+        sent = nil
+        stub_bulk_send { |env| sent = env.body }
 
-      before do
-        # Allow the client to generate unique client IDs for testing
-        allow(client).to receive(:generate_unique_client_id).and_return('test-client-id')
-        
-        stubs.post('SmBulkSend') do |env|
-          expect(env.url.path).to eq('/SmBulkSend')
-          # Check for query parameters
-          expect(env.params['username']).to eq('test_username')
-          expect(env.params['password']).to eq('test_password')
-          expect(env.params['Encoding_PostIn']).to eq('UTF8')
-          # Body should contain formatted message data with $$ separators
-          expect(env.body).to include('test-client-id')
-          expect(env.body).to include('0912345678')
-          expect(env.body).to include('Message 1')
-          expect(env.body).to include('0922333444')
-          expect(env.body).to include('Message 2')
-          expect(env.body).to include('$$')
+        client.batch_send(
+          [{
+            client_id: 'cid-1',
+            to: '0912345678',
+            dlvtime: '20250526120000',
+            vldtime: '20250527120000',
+            destname: 'Big Bao',
+            response_url: 'https://callback.example/report',
+            text: 'hello'
+          }]
+        )
 
+        # ClientID $$ dstaddr $$ dlvtime $$ vldtime $$ destname $$ response $$ smbody
+        expect(sent.split('$$')).to eq(
           [
-            200,
-            { 'Content-Type' => 'text/plain' },
-            "statuscode=1\nmsgid=1234567890\nAccountPoint=98"
+            'cid-1', '0912345678', '20250526120000', '20250527120000',
+            'Big Bao', 'https://callback.example/report', 'hello'
           ]
-        end
+        )
       end
 
-      it 'sends a single batch and returns a single response' do
-        response = client.batch_send_with_limit(messages, 5)
+      it 'leaves optional fields empty rather than omitting them' do
+        sent = nil
+        stub_bulk_send { |env| sent = env.body }
 
-        expect(response).to be_a(MitakeSms::Response)
-        expect(response).to be_success
-        expect(response.message_id).to eq('1234567890')
-        expect(response.account_point).to eq('98')
+        client.batch_send([{ to: '0912345678', text: 'hello' }])
+
+        expect(sent).to eq('test-client-id$$0912345678$$$$$$$$$$hello')
+      end
+
+      it 'generates a client ID per row when none is given' do
+        sent = nil
+        allow(client).to receive(:generate_unique_client_id).and_return('id-a', 'id-b')
+        stub_bulk_send { |env| sent = env.body }
+
+        client.batch_send(messages)
+
+        expect(sent.lines.map { |line| line.split('$$').first }).to eq(%w[id-a id-b])
+      end
+
+      it 'converts line breaks in the body to ASCII 6' do
+        sent = nil
+        stub_bulk_send { |env| sent = env.body }
+
+        client.batch_send([{ to: '09', text: "line1\r\nline2\nline3\rline4" }])
+
+        expect(sent).to end_with("line1\u0006line2\u0006line3\u0006line4")
+      end
+
+      it 'forwards other documented fields as query parameters' do
+        params = nil
+        stub_bulk_send("statuscode=1\nmsgid=1\nsmsPoint=2") { |env| params = env.params }
+
+        response = client.batch_send(messages, smsPointFlag: '1', objectID: 'nightly')
+
+        expect(params).to include('smsPointFlag' => '1', 'objectID' => 'nightly')
+        expect(response.sms_point).to eq('2')
       end
     end
 
-    context 'when messages count exceeds the limit' do
-      let(:messages) do
-        [
-          { to: '0912345678', text: 'Message 1' },
-          { to: '0922333444', text: 'Message 2' },
-          { to: '0933555666', text: 'Message 3' },
-          { to: '0944666777', text: 'Message 4' }
-        ]
+    context 'when a structural field contains a delimiter' do
+      it 'rejects $$ in destname' do
+        expect { client.batch_send([{ to: '09', destname: 'a$$b', text: 'hi' }]) }
+          .to raise_error(ArgumentError, /messages\[0\]\[:destname\]/)
       end
 
-      before do
-        # Allow the client to generate unique client IDs for testing
-        allow(client).to receive(:generate_unique_client_id).and_return('test-client-id')
-        
-        # Set up counter to track which batch is being processed
-        batch_counter = 0
+      it 'rejects a line break in destname, which would otherwise split the row' do
+        expect { client.batch_send([{ to: '09', text: 'ok' }, { to: '09', destname: "a\nb", text: 'hi' }]) }
+          .to raise_error(ArgumentError, /messages\[1\]\[:destname\]/)
+      end
 
-        # Stub for both batches
+      it 'allows $$ in the message body, which is the last field' do
+        sent = nil
+        stub_bulk_send { |env| sent = env.body }
+
+        client.batch_send([{ to: '09', text: 'Price is $$100' }])
+
+        expect(sent).to end_with('$$Price is $$100')
+      end
+    end
+
+    context 'when the batch exceeds the API limit of 500' do
+      let(:messages) { Array.new(501) { |i| { to: '0912345678', text: "Message #{i}" } } }
+
+      it 'splits at 500 and returns one response per request' do
+        sizes = []
         stubs.post('SmBulkSend') do |env|
-          expect(env.url.path).to eq('/SmBulkSend')
-
-          batch_counter += 1
-
-          if batch_counter == 1
-            # First batch should contain Message 1 and Message 2
-            expect(env.params['username']).to eq('test_username')
-            expect(env.params['password']).to eq('test_password')
-            expect(env.params['Encoding_PostIn']).to eq('UTF8')
-            # Body should contain formatted message data with $$ separators
-            expect(env.body).to include('test-client-id')
-            expect(env.body).to include('0912345678')
-            expect(env.body).to include('Message 1')
-            expect(env.body).to include('0922333444')
-            expect(env.body).to include('Message 2')
-            expect(env.body).to include('$$')
-
-            [
-              200,
-              { 'Content-Type' => 'text/plain' },
-              "statuscode=1\nmsgid=1234567890\nAccountPoint=98"
-            ]
-          else
-            # Second batch should contain Message 3 and Message 4
-            expect(env.params['username']).to eq('test_username')
-            expect(env.params['password']).to eq('test_password')
-            expect(env.params['Encoding_PostIn']).to eq('UTF8')
-            # Body should contain formatted message data with $$ separators
-            expect(env.body).to include('test-client-id')
-            expect(env.body).to include('0933555666')
-            expect(env.body).to include('Message 3')
-            expect(env.body).to include('0944666777')
-            expect(env.body).to include('Message 4')
-            expect(env.body).to include('$$')
-
-            [
-              200,
-              { 'Content-Type' => 'text/plain' },
-              "statuscode=1\nmsgid=1234567891\nAccountPoint=96"
-            ]
-          end
+          sizes << env.body.lines.size
+          [200, {}, "statuscode=1\nmsgid=#{sizes.size}\nAccountPoint=98"]
         end
-      end
 
-      it 'splits into multiple batches and returns an array of responses' do
-        responses = client.batch_send_with_limit(messages, 2)
+        responses = client.batch_send(messages)
 
-        expect(responses).to be_an(Array)
-        expect(responses.size).to eq(2)
-
-        expect(responses[0]).to be_a(MitakeSms::Response)
-        expect(responses[0]).to be_success
-        expect(responses[0].message_id).to eq('1234567890')
-        expect(responses[0].account_point).to eq('98')
-
-        expect(responses[1]).to be_a(MitakeSms::Response)
-        expect(responses[1]).to be_success
-        expect(responses[1].message_id).to eq('1234567891')
-        expect(responses[1].account_point).to eq('96')
+        expect(sizes).to eq([500, 1])
+        expect(responses.map(&:message_id)).to eq(%w[1 2])
+        expect(responses).to all(be_a(MitakeSms::Response).and(be_success))
       end
     end
   end

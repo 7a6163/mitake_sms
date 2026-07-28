@@ -37,73 +37,41 @@ RSpec.describe 'ClientID generation and handling' do
     end
   end
 
-  describe 'advanced batch SMS with ClientID' do
+  describe 'batch SMS with ClientID' do
+    let(:generated_client_id) { /\d{17}-[a-f0-9]{8}/ }
+
+    def stub_bulk_send
+      stubs.post('SmBulkSend') do |env|
+        # The payload must travel in the body, never in the query string
+        expect(env.params['data']).to be_nil
+        yield env.body
+        [200, { 'Content-Type' => 'text/plain' }, "statuscode=1\nmsgid=1234567890\nAccountPoint=97"]
+      end
+    end
+
     context 'when client_id is provided' do
       it 'uses the provided client_id' do
-        messages = [
-          {
-            client_id: 'custom-id-123',
-            to: '0912345678',
-            text: 'Test message'
-          }
-        ]
+        stub_bulk_send { |body| expect(body).to include('custom-id-123') }
 
-        stubs.post('SmPost') do |env|
-          # The data should include the custom client ID
-          expect(env.params['data']).to include('custom-id-123')
-          # Body should be empty
-          expect(env.body).to be_empty
-          [200, { 'Content-Type' => 'text/plain' }, "statuscode=1\nmsgid=1234567890\nAccountPoint=97"]
-        end
-
-        response = client.advanced_batch_send(messages)
+        response = client.batch_send([{ client_id: 'custom-id-123', to: '0912345678', text: 'Test message' }])
         expect(response).to be_success
       end
     end
 
     context 'when client_id is not provided' do
       it 'generates a unique client_id automatically' do
-        messages = [
-          {
-            to: '0912345678',
-            text: 'Test message'
-          }
-        ]
+        stub_bulk_send { |body| expect(body).to match(generated_client_id) }
 
-        stubs.post('SmPost') do |env|
-          # The data should include a generated client ID in the correct format
-          client_id_pattern = /\d{17}-[a-f0-9]{8}/
-          expect(env.params['data']).to match(client_id_pattern)
-          # Body should be empty
-          expect(env.body).to be_empty
-          [200, { 'Content-Type' => 'text/plain' }, "statuscode=1\nmsgid=1234567890\nAccountPoint=97"]
-        end
-
-        response = client.advanced_batch_send(messages)
+        response = client.batch_send([{ to: '0912345678', text: 'Test message' }])
         expect(response).to be_success
       end
     end
 
     context 'when client_id is empty' do
       it 'generates a unique client_id automatically' do
-        messages = [
-          {
-            client_id: '',
-            to: '0912345678',
-            text: 'Test message'
-          }
-        ]
+        stub_bulk_send { |body| expect(body).to match(generated_client_id) }
 
-        stubs.post('SmPost') do |env|
-          # The data should include a generated client ID in the correct format
-          client_id_pattern = /\d{17}-[a-f0-9]{8}/
-          expect(env.params['data']).to match(client_id_pattern)
-          # Body should be empty
-          expect(env.body).to be_empty
-          [200, { 'Content-Type' => 'text/plain' }, "statuscode=1\nmsgid=1234567890\nAccountPoint=97"]
-        end
-
-        response = client.advanced_batch_send(messages)
+        response = client.batch_send([{ client_id: '', to: '0912345678', text: 'Test message' }])
         expect(response).to be_success
       end
     end
