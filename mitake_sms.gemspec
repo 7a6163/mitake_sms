@@ -34,13 +34,13 @@ Gem::Specification.new do |spec|
   # and CVE-2026-25765. The 1.x line is also patched, but a disjoint range cannot
   # be expressed here, and 1.x predates the Ruby version this gem requires.
   spec.add_dependency "faraday", ">= 2.14.3", "< 3.0"
-  spec.add_dependency "dry-configurable", ">= 0.13.0", "< 2.0"
+  spec.add_dependency "dry-configurable", ">= 1.4.0", "< 2.0"
   spec.add_development_dependency "rspec", "~> 3.0"
   spec.add_development_dependency "webmock", "~> 3.14"
   spec.add_development_dependency "pry", "~> 0.14.0"
   spec.add_development_dependency "rake", "~> 13.0"
-  spec.add_development_dependency "simplecov", "~> 0.21.0"
-  spec.add_development_dependency "simplecov-cobertura", "~> 2.1"
+  spec.add_development_dependency "simplecov", "~> 1.0.3"
+  spec.add_development_dependency "simplecov-cobertura", "~> 4.0"
 
   # For more information and examples about making a new gem, check out our
   # guide at: https://bundler.io/guides/creating_gem.html
