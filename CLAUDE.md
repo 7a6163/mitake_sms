@@ -26,7 +26,9 @@ passes every example can still exit non-zero on coverage.
 
 `mutant run` exits non-zero while any mutation survives, and the gem is at
 **100%** (1199 mutations, 0 alive) — so a surviving mutation means the change
-you just made is untested, not that the baseline drifted.
+you just made is untested, not that the baseline drifted. CI runs it as its own
+job on Ruby 3.4 (~20s); it is pinned rather than matrixed because the `parser`
+gem mutant reads source with trails new Ruby releases.
 
 Mutant picks the tests for a subject from RSpec descriptions, so a spec file must
 open with `RSpec.describe MitakeSms::Client` (the constant, not a string) or its

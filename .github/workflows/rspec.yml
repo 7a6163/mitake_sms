@@ -42,3 +42,22 @@ jobs:
         files: ./coverage/coverage.xml
         flags: unittests
         fail_ci_if_error: true
+
+  mutant:
+    runs-on: ubuntu-latest
+    name: Mutation coverage
+
+    steps:
+    - uses: actions/checkout@v6
+
+    - name: Set up Ruby
+      uses: ruby/setup-ruby@v1
+      with:
+        # Pinned rather than matrixed: mutant parses source through the `parser`
+        # gem, which trails new Ruby releases.
+        ruby-version: '3.4'
+        bundler-cache: true
+
+    # Exits non-zero on the first surviving mutation. The gem is at 100%.
+    - name: Run mutant
+      run: bundle exec mutant run
