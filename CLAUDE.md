@@ -24,17 +24,21 @@ bundle exec mutant session subject 'MitakeSms::Response#parse'  # detail on last
 SimpleCov enforces `minimum_coverage 80` in `spec/spec_helper.rb`, so a run that
 passes every example can still exit non-zero on coverage.
 
-`mutant run` exits non-zero while any mutation survives. `MitakeSms::Response` is
-at **100%**; the whole gem is at **84.1%** (195 alive, all in `Client`,
-`Configuration` and the `MitakeSms` module facade). Config lives in `.mutant.yml` — `usage: opensource`
+`mutant run` exits non-zero while any mutation survives. `MitakeSms::Response` and
+`MitakeSms::Configuration` are at **100%**; the whole gem is at **86.3%** (168
+alive, all in `Client` and the `MitakeSms` module facade). Config lives in `.mutant.yml` — `usage: opensource`
 is what keeps mutant free, and is only valid while this repo is public. SimpleCov
 is skipped under mutant (`unless defined?(Mutant)` in `spec_helper`) because its
 `at_exit` minimum-coverage check would fail every mutation run and clobber
 `coverage/`.
 
-Specs use WebMock — no request reaches Mitake. `spec_helper` resets
-`MitakeSms.@config` and `@client` before each example, so the memoized client in
-`MitakeSms.client` doesn't leak configuration between tests.
+Specs use WebMock — no request reaches Mitake. `spec_helper` clears
+`MitakeSms.@client` and drops `Dry::Configurable`'s memo
+(`Configuration.@__config__`) before each example. Without that reset, settings
+written by one spec file leak into every later one, and with `--order random` in
+`.rspec` the mutation score drifts run to run (it swung 195/183/168 before the
+fix). If mutation results ever look unstable again, suspect global state before
+suspecting mutant.
 
 ## Architecture
 

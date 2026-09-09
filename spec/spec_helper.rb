@@ -40,9 +40,11 @@ RSpec.configure do |config|
     c.syntax = :expect
   end
 
-  # Clear configuration before each test
+  # Dry::Configurable memoizes the config object on the class, so a spec that
+  # writes a setting leaks into every later example and makes results depend on
+  # `--order random`. Drop the memo so each example rebuilds from the defaults.
   config.before do
-    MitakeSms.instance_variable_set(:@config, nil)
+    MitakeSms::Configuration.instance_variable_set(:@__config__, nil)
     MitakeSms.instance_variable_set(:@client, nil)
   end
 end
