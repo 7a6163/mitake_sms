@@ -4,20 +4,24 @@
 require 'simplecov'
 require 'simplecov-cobertura'
 
-SimpleCov.start do
-  skip '/spec/'
-  skip '/vendor/'
-  # 添加你想要測量覆蓋率的文件夾
-  group 'Library', 'lib'
+# mutant boots the suite in-process per mutation; SimpleCov's at_exit check would
+# fail those runs and overwrite the real report.
+unless defined?(Mutant)
+  SimpleCov.start do
+    skip '/spec/'
+    skip '/vendor/'
+    # 添加你想要測量覆蓋率的文件夾
+    group 'Library', 'lib'
 
-  # 設定輸出格式
-  formatter SimpleCov::Formatter::MultiFormatter.new([
-    SimpleCov::Formatter::HTMLFormatter,
-    SimpleCov::Formatter::CoberturaFormatter # 生成 XML 格式報告
-  ])
+    # 設定輸出格式
+    formatter SimpleCov::Formatter::MultiFormatter.new([
+      SimpleCov::Formatter::HTMLFormatter,
+      SimpleCov::Formatter::CoberturaFormatter # 生成 XML 格式報告
+    ])
 
-  # 設定覆蓋率報告的最小覆蓋率百分比
-  minimum_coverage 80
+    # 設定覆蓋率報告的最小覆蓋率百分比
+    minimum_coverage 80
+  end
 end
 
 require 'bundler/setup'

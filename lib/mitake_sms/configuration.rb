@@ -55,16 +55,4 @@ module MitakeSms
       end
     end
   end
-
-  # Methods for the MitakeSms module itself
-  class << self
-    def configure
-      yield(config) if block_given?
-    end
-
-    # Return the Dry::Configurable object directly
-    def config
-      Configuration.config
-    end
-  end
 end

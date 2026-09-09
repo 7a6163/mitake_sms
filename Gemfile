@@ -10,4 +10,6 @@ group :development, :test do
   gem "irb"
   # pry loads ostruct, which is no longer a default gem as of Ruby 4.0
   gem "ostruct"
+  # Mutation testing. Free under `usage: opensource` while this repo is public.
+  gem "mutant-rspec"
 end
