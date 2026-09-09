@@ -13,7 +13,19 @@ RSpec.describe MitakeSms do
     end
   end
 
+  describe '.config' do
+    # Configuration answers the same readers as its Dry config object, so
+    # reading a setting through it would not notice the class being returned.
+    it 'returns the Dry config object rather than the Configuration class' do
+      expect(MitakeSms.config).to be(MitakeSms::Configuration.config)
+    end
+  end
+
   describe '.configure' do
+    it 'is a no-op without a block' do
+      expect { MitakeSms.configure }.not_to raise_error
+    end
+
     it 'sets the configuration' do
       expect(MitakeSms.config.username).to eq('test_username')
       expect(MitakeSms.config.password).to eq('test_password')
@@ -48,6 +60,17 @@ RSpec.describe MitakeSms do
         .with(to: to, text: text, destname: 'Test User', response_url: nil, client_id: nil)
 
       MitakeSms.send_sms(to: to, text: text, destname: 'Test User')
+    end
+
+    it 'delegates response_url and client_id' do
+      expect(client).to receive(:send_sms)
+        .with(to: to, text: text, destname: nil,
+              response_url: 'https://example.com/callback', client_id: 'abc-123')
+
+      MitakeSms.send_sms(
+        to: to, text: text,
+        response_url: 'https://example.com/callback', client_id: 'abc-123'
+      )
     end
 
     it 'forwards any other documented field' do

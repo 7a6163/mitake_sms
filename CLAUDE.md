@@ -24,9 +24,9 @@ bundle exec mutant session subject 'MitakeSms::Response#parse'  # detail on last
 SimpleCov enforces `minimum_coverage 80` in `spec/spec_helper.rb`, so a run that
 passes every example can still exit non-zero on coverage.
 
-`mutant run` exits non-zero while any mutation survives. `Client`, `Response` and
-`Configuration` are at **100%**; the whole gem is at **99.6%** (5 alive, all in
-the `MitakeSms` module facade in `lib/mitake_sms.rb`).
+`mutant run` exits non-zero while any mutation survives, and the gem is at
+**100%** (1199 mutations, 0 alive) — so a surviving mutation means the change
+you just made is untested, not that the baseline drifted.
 
 Mutant picks the tests for a subject from RSpec descriptions, so a spec file must
 open with `RSpec.describe MitakeSms::Client` (the constant, not a string) or its
