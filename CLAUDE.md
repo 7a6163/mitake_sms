@@ -24,8 +24,9 @@ bundle exec mutant session subject 'MitakeSms::Response#parse'  # detail on last
 SimpleCov enforces `minimum_coverage 80` in `spec/spec_helper.rb`, so a run that
 passes every example can still exit non-zero on coverage.
 
-`mutant run` exits non-zero while any mutation survives; the current baseline is
-**82.8%** (212 alive of 1233). Config lives in `.mutant.yml` — `usage: opensource`
+`mutant run` exits non-zero while any mutation survives. `MitakeSms::Response` is
+at **100%**; the whole gem is at **84.1%** (195 alive, all in `Client`,
+`Configuration` and the `MitakeSms` module facade). Config lives in `.mutant.yml` — `usage: opensource`
 is what keeps mutant free, and is only valid while this repo is public. SimpleCov
 is skipped under mutant (`unless defined?(Mutant)` in `spec_helper`) because its
 `at_exit` minimum-coverage check would fail every mutation run and clobber

@@ -45,7 +45,6 @@ module MitakeSms
     def initialize(raw_response)
       @raw_response = raw_response
       @records = []
-      @account_point = nil
       parse(raw_response)
     end
 
@@ -105,7 +104,8 @@ module MitakeSms
     def describe(record)
       status = record['statuscode']
       description = "#{status || '?'} #{STATUS_MESSAGES.fetch(status, '未知的狀態')}"
-      record['msgid'] ? "#{record['msgid']}: #{description}" : description
+      msgid = record['msgid']
+      msgid ? "#{msgid}: #{description}" : description
     end
 
     def parse(response)
