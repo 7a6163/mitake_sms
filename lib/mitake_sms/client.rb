@@ -90,7 +90,7 @@ module MitakeSms
 
       perform_request('SmBulkSend', params: query_params) do |req|
         req.body = batch.map { |msg| format_batch_row(msg) }.join("\n")
-        req.headers['Content-Type'] = 'text/plain'
+        req['Content-Type'] = 'text/plain'
       end
     end
 
@@ -139,7 +139,6 @@ module MitakeSms
     def build_connection
       Faraday.new(url: @config.api_url) do |conn|
         conn.request :url_encoded
-        conn.adapter Faraday.default_adapter
         conn.options.timeout = @config.timeout
         conn.options.open_timeout = @config.open_timeout
       end
@@ -163,7 +162,7 @@ module MitakeSms
     # Mitake uses the client ID to suppress duplicate sends within 12 hours,
     # so it has to be unique per message rather than merely random.
     def generate_unique_client_id
-      "#{Time.now.strftime('%Y%m%d%H%M%S%L')}-#{SecureRandom.uuid.delete('-')[0, 8]}"
+      "#{Time.now.strftime('%Y%m%d%H%M%S%L')}-#{SecureRandom.hex(4)}"
     end
   end
 end

@@ -24,9 +24,17 @@ bundle exec mutant session subject 'MitakeSms::Response#parse'  # detail on last
 SimpleCov enforces `minimum_coverage 80` in `spec/spec_helper.rb`, so a run that
 passes every example can still exit non-zero on coverage.
 
-`mutant run` exits non-zero while any mutation survives. `MitakeSms::Response` and
-`MitakeSms::Configuration` are at **100%**; the whole gem is at **86.3%** (168
-alive, all in `Client` and the `MitakeSms` module facade). Config lives in `.mutant.yml` — `usage: opensource`
+`mutant run` exits non-zero while any mutation survives. `Client`, `Response` and
+`Configuration` are at **100%**; the whole gem is at **99.6%** (5 alive, all in
+the `MitakeSms` module facade in `lib/mitake_sms.rb`).
+
+Mutant picks the tests for a subject from RSpec descriptions, so a spec file must
+open with `RSpec.describe MitakeSms::Client` (the constant, not a string) or its
+examples are invisible to mutant. For a **public** method it goes further and
+selects only examples nested under `describe '#the_method'`; a class-level
+description is used only for private methods, which have no matching describe.
+Three spec files opened with a string and hid 83 mutations that the suite was in
+fact killing. Config lives in `.mutant.yml` — `usage: opensource`
 is what keeps mutant free, and is only valid while this repo is public. SimpleCov
 is skipped under mutant (`unless defined?(Mutant)` in `spec_helper`) because its
 `at_exit` minimum-coverage check would fail every mutation run and clobber

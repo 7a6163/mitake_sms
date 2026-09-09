@@ -2,7 +2,7 @@
 
 require 'spec_helper'
 
-RSpec.describe 'Error handling and edge cases' do
+RSpec.describe MitakeSms::Client do
   let(:client) { MitakeSms::Client.new }
   let(:stubs) { Faraday::Adapter::Test::Stubs.new }
   let(:connection) do
@@ -27,28 +27,24 @@ RSpec.describe 'Error handling and edge cases' do
     let(:to) { '0912345678' }
     let(:text) { 'Test message' }
 
-    it 'handles 400 Bad Request errors' do
-      stubs.post('SmSend') { [400, {}, ''] }
+    # Both edges of the 5xx range, and the status either side of it, so that a
+    # range shifted by one is not mistaken for the documented mapping.
+    {
+      400 => [MitakeSms::Client::InvalidRequestError, 'Invalid request parameters'],
+      401 => [MitakeSms::Client::AuthenticationError, 'Invalid username or password'],
+      418 => [MitakeSms::Client::Error, 'Unexpected error: 418'],
+      499 => [MitakeSms::Client::Error, 'Unexpected error: 499'],
+      500 => [MitakeSms::Client::ServerError, 'Server error: 500'],
+      599 => [MitakeSms::Client::ServerError, 'Server error: 599'],
+      600 => [MitakeSms::Client::Error, 'Unexpected error: 600']
+    }.each do |status, (error_class, message)|
+      it "maps HTTP #{status} to #{error_class}" do
+        stubs.post('SmSend') { [status, {}, ''] }
 
-      expect {
-        client.send_sms(to: to, text: text)
-      }.to raise_error(MitakeSms::Client::InvalidRequestError, 'Invalid request parameters')
-    end
-
-    it 'handles 500 Server errors' do
-      stubs.post('SmSend') { [500, {}, ''] }
-
-      expect {
-        client.send_sms(to: to, text: text)
-      }.to raise_error(MitakeSms::Client::ServerError, 'Server error: 500')
-    end
-
-    it 'handles other unexpected errors' do
-      stubs.post('SmSend') { [418, {}, ''] }
-
-      expect {
-        client.send_sms(to: to, text: text)
-      }.to raise_error(MitakeSms::Client::Error, 'Unexpected error: 418')
+        expect {
+          client.send_sms(to: to, text: text)
+        }.to raise_error(error_class, message)
+      end
     end
   end
 
@@ -69,6 +65,17 @@ RSpec.describe 'Error handling and edge cases' do
 
       response = client.batch_send(messages)
       expect(response).to be_success
+    end
+
+    it 'handles messages with a missing recipient' do
+      allow(client).to receive(:generate_unique_client_id).and_return('test-client-id')
+
+      stubs.post('SmBulkSend') do |env|
+        expect(env.body).to eq('test-client-id$$$$$$$$$$$$hi')
+        [200, { 'Content-Type' => 'text/plain' }, "statuscode=1\nmsgid=1"]
+      end
+
+      expect(client.batch_send([{ text: 'hi' }])).to be_success
     end
 
     it 'handles messages with missing text' do
