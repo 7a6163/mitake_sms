@@ -3,29 +3,6 @@
 require 'spec_helper'
 
 RSpec.describe MitakeSms::Configuration do
-  # Reset configuration before each test
-  before do
-    # Store original values
-    @original_username = ENV['MITAKE_USERNAME']
-    @original_password = ENV['MITAKE_PASSWORD']
-
-    # Clear environment variables
-    ENV['MITAKE_USERNAME'] = nil
-    ENV['MITAKE_PASSWORD'] = nil
-
-    # Reset configuration to defaults
-    MitakeSms::Configuration.username = nil
-    MitakeSms::Configuration.password = nil
-    MitakeSms::Configuration.api_url = 'https://smsapi.mitake.com.tw/api/mtk/'
-    MitakeSms::Configuration.timeout = 30
-    MitakeSms::Configuration.open_timeout = 5
-  end
-
-  # Restore original environment variables after each test
-  after do
-    ENV['MITAKE_USERNAME'] = @original_username
-    ENV['MITAKE_PASSWORD'] = @original_password
-  end
   describe 'default values' do
     it 'has default values' do
       expect(described_class.username).to be_nil
@@ -33,6 +10,25 @@ RSpec.describe MitakeSms::Configuration do
       expect(described_class.api_url).to eq('https://smsapi.mitake.com.tw/api/mtk/')
       expect(described_class.timeout).to eq(30)
       expect(described_class.open_timeout).to eq(5)
+    end
+  end
+
+  # MitakeSms.configure writes through the Dry config object, so the class-level
+  # writers are only exercised when a caller uses them directly. Every value here
+  # differs from the default, or an assignment that never happened would still pass.
+  describe 'class-level writers' do
+    it 'writes every setting through to the config' do
+      described_class.username = 'writer_user'
+      described_class.password = 'writer_pass'
+      described_class.api_url = 'https://writer.example/'
+      described_class.timeout = 61
+      described_class.open_timeout = 11
+
+      expect(described_class.username).to eq('writer_user')
+      expect(described_class.password).to eq('writer_pass')
+      expect(described_class.api_url).to eq('https://writer.example/')
+      expect(described_class.timeout).to eq(61)
+      expect(described_class.open_timeout).to eq(11)
     end
   end
 

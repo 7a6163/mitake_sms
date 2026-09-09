@@ -2,7 +2,7 @@
 
 require 'spec_helper'
 
-RSpec.describe 'Newline and special character handling' do
+RSpec.describe MitakeSms::Client do
   let(:client) { MitakeSms::Client.new }
   let(:stubs) { Faraday::Adapter::Test::Stubs.new }
   let(:connection) do
@@ -21,7 +21,7 @@ RSpec.describe 'Newline and special character handling' do
     allow_any_instance_of(MitakeSms::Client).to receive(:build_connection).and_return(connection)
   end
 
-  describe 'handling newlines in message text' do
+  describe '#send_sms' do
     let(:to) { '0912345678' }
     let(:text_with_newlines) { "First line\nSecond line" }
 
@@ -50,7 +50,7 @@ RSpec.describe 'Newline and special character handling' do
     end
   end
 
-  describe 'handling special characters in message text' do
+  describe '#batch_send' do
     # The url_encoded middleware must not touch the text/plain batch body.
     it 'leaves characters that are significant in a query string alone' do
       sent = nil

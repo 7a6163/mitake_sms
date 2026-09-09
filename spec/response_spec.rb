@@ -11,12 +11,17 @@ RSpec.describe MitakeSms::Response do
 
     it 'parses the single record' do
       expect(response).to be_success
+      expect(response).not_to be_error
       expect(response.error).to be_nil
       expect(response.code).to eq('1')
       expect(response.message_id).to eq('#000000013')
       expect(response.client_id).to eq('1')
       expect(response.account_point).to eq('126')
       expect(response.records.size).to eq(1)
+    end
+
+    it 'keeps the body untouched' do
+      expect(response.raw_response).to eq("[1]\nmsgid=#000000013\nstatuscode=1\nAccountPoint=126")
     end
   end
 
@@ -114,6 +119,12 @@ RSpec.describe MitakeSms::Response do
     it 'is not flagged as duplicate' do
       expect(response).not_to be_duplicate
     end
+
+    it 'is not flagged as duplicate when Duplicate is present but not Y' do
+      response = described_class.new("statuscode=1\nDuplicate=N")
+
+      expect(response).not_to be_duplicate
+    end
   end
 
   describe 'a reply carrying only a balance' do
@@ -122,8 +133,80 @@ RSpec.describe MitakeSms::Response do
     it 'reads the balance but does not report success without any record' do
       expect(response.account_point).to eq('110')
       expect(response.records).to be_empty
-      expect(response.code).to be_nil
       expect(response).not_to be_success
+      expect(response.error).to eq('Empty or unparseable response')
+    end
+
+    # Every per-record reader reads through an absent first record.
+    it 'reads every record field as absent rather than raising' do
+      expect(response.code).to be_nil
+      expect(response.message_id).to be_nil
+      expect(response.message_ids).to be_empty
+      expect(response.client_id).to be_nil
+      expect(response.sms_point).to be_nil
+      expect(response).not_to be_duplicate
+    end
+  end
+
+  describe 'a failing record carrying a msgid' do
+    let(:response) { described_class.new("[1]\nmsgid=#000000013\nstatuscode=5") }
+
+    it 'prefixes the reason with the msgid' do
+      expect(response.error).to eq('#000000013: 5 內容有錯誤')
+    end
+  end
+
+  describe 'a record with no statuscode at all' do
+    let(:response) { described_class.new("[1]\nmsgid=#000000013") }
+
+    it 'is a failure described with a placeholder status' do
+      expect(response).not_to be_success
+      expect(response.error).to eq('#000000013: ? 未知的狀態')
+    end
+  end
+
+  describe 'several failing records' do
+    let(:response) { described_class.new("[1]\nstatuscode=5\n[2]\nstatuscode=v") }
+
+    it 'joins every reason' do
+      expect(response.error).to eq('5 內容有錯誤; v 無效的手機號碼')
+    end
+  end
+
+  describe 'a batch where one record has no msgid' do
+    let(:response) { described_class.new("[1]\nmsgid=#000000333\nstatuscode=1\n[2]\nstatuscode=1") }
+
+    it 'drops the missing msgid instead of yielding nil' do
+      expect(response.message_ids).to eq(['#000000333'])
+    end
+  end
+
+  describe 'line shapes' do
+    it 'ignores whitespace around a line' do
+      response = described_class.new("  statuscode=1  \nmsgid=1")
+
+      expect(response).to be_success
+    end
+
+    it 'keeps an empty clientid header as its own record' do
+      response = described_class.new("[]\nstatuscode=1")
+
+      expect(response.client_id).to eq('')
+      expect(response.records.size).to eq(1)
+    end
+
+    it 'keeps an empty AccountPoint out of the records' do
+      response = described_class.new("[1]\nstatuscode=1\nAccountPoint=")
+
+      expect(response.account_point).to eq('')
+      expect(response.records.size).to eq(1)
+    end
+
+    it 'keeps a key with an empty value' do
+      response = described_class.new('statuscode=')
+
+      expect(response.code).to eq('')
+      expect(response.records.size).to eq(1)
     end
   end
 
@@ -140,6 +223,22 @@ RSpec.describe MitakeSms::Response do
 
       expect(response).not_to be_success
       expect(response.records).to be_empty
+    end
+
+    # A truthy non-String must be rejected by the type check, not merely by being falsy.
+    it 'fails on a truthy body that is not a string' do
+      response = described_class.new(123)
+
+      expect(response).not_to be_success
+      expect(response.records).to be_empty
+      expect(response.raw_response).to eq(123)
+    end
+
+    # A String subclass is still a body worth parsing.
+    it 'parses a String subclass body' do
+      response = described_class.new(Class.new(String).new('statuscode=1'))
+
+      expect(response).to be_success
     end
   end
 end

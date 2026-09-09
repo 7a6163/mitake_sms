@@ -2,7 +2,7 @@
 
 require 'spec_helper'
 
-RSpec.describe 'ClientID generation and handling' do
+RSpec.describe MitakeSms::Client do
   let(:client) { MitakeSms::Client.new }
   let(:stubs) { Faraday::Adapter::Test::Stubs.new }
   let(:connection) do

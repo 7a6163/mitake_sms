@@ -3,8 +3,6 @@
 require 'spec_helper'
 
 RSpec.describe MitakeSms::Client do
-  let(:config) { MitakeSms::Configuration.new }
-
   before do
     MitakeSms.configure do |c|
       c.username = 'test_username'
@@ -45,7 +43,11 @@ RSpec.describe MitakeSms::Client do
           expect(env.body[:password]).to eq('test_password')
           expect(env.body[:dstaddr]).to eq(to)
           expect(env.body[:smbody]).to eq('Test message')
-          expect(env.body[:destname]).to be_nil
+          # Absent, not present-and-nil: an unconditional assignment would still
+          # read as nil here.
+          expect(env.body).not_to have_key(:destname)
+          expect(env.body).not_to have_key(:response)
+          expect(env.body).not_to have_key(:clientid)
 
           [
             200,
@@ -107,6 +109,19 @@ RSpec.describe MitakeSms::Client do
 
         expect(response).to be_success
       end
+    end
+
+    it 'forwards any other documented field into the form body' do
+      new_stubs = Faraday::Adapter::Test::Stubs.new
+      new_connection = Faraday.new { |builder| builder.adapter :test, new_stubs }
+      allow_any_instance_of(described_class).to receive(:build_connection).and_return(new_connection)
+
+      new_stubs.post('SmSend') do |env|
+        expect(env.body[:dlvtime]).to eq('20250526120000')
+        [200, { 'Content-Type' => 'text/plain' }, "statuscode=1\nmsgid=1"]
+      end
+
+      expect(client.send_sms(to: to, text: text, dlvtime: '20250526120000')).to be_success
     end
 
     context 'when the connection fails' do
@@ -252,6 +267,18 @@ RSpec.describe MitakeSms::Client do
         client.batch_send([{ to: '09', text: 'Price is $$100' }])
 
         expect(sent).to end_with('$$Price is $$100')
+      end
+    end
+
+    context 'when the batch is exactly the API limit of 500' do
+      let(:messages) { Array.new(500) { |i| { to: '0912345678', text: "Message #{i}" } } }
+
+      it 'sends one request and returns a single response, not an array' do
+        stub_bulk_send
+
+        response = client.batch_send(messages)
+
+        expect(response).to be_a(MitakeSms::Response)
       end
     end
 
