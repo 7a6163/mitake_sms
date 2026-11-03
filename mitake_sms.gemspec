@@ -35,6 +35,9 @@ Gem::Specification.new do |spec|
   # and CVE-2026-25765. The 1.x line is also patched, but a disjoint range cannot
   # be expressed here, and 1.x predates the Ruby version this gem requires.
   spec.add_dependency "faraday", ">= 2.14.3", "< 3.0"
+  # faraday-net_http 2.0.0 depends back on faraday, and Bundler aborts on that
+  # cycle ("gems that depend on each other, creating an infinite loop").
+  spec.add_dependency "faraday-net_http", ">= 3.0"
   spec.add_dependency "dry-configurable", ">= 1.4.0", "< 2.0"
   spec.add_development_dependency "rspec", "~> 3.0"
   spec.add_development_dependency "webmock", "~> 3.14"
